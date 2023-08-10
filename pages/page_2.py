@@ -3,11 +3,11 @@ import streamlit as st
 #左边侧栏的显示
 st.sidebar.markdown("## 逻辑回归 ❄️")
 st.write("Welcome to my 3 space~")
-#########################################符号约定#################################################
+#########################################符号约定################################################
 
 with st.expander("在正式学习算法课程之前，我们要先明确一下符号的定义，以免在后继学习中混淆概念~"):
       st.markdown("##### 样本矩阵与向量的符号定义如下：")
-      st.markdown("###### &emsp;&emsp;样本矩阵")
+      st.markdown("###### &emsp;&emsp;样本矩阵:```有n个样本，每个样本有m维特征```")
       st.latex(r'''X=\begin{pmatrix}\mathbf {x_1} & \mathbf {x_2}&{\cdots}&\mathbf {x_n}\end{pmatrix}^T=\begin{pmatrix} \mathbf x_1^T \\  \mathbf x_2^T \\ {\vdots} \\ \mathbf x_n^T \end{pmatrix} \
             = \begin{pmatrix} x_{11} & x_{12} & {\cdots} & x_{1m} \\  x_{21} & x_{22} & {\cdots} & x_{2m}\\ {\vdots} &{\vdots} &{}&{\vdots} \\x_{n1} & x_{n2} & {\cdots} & x_{nm} \end{pmatrix}\
                   \in R^{n\times m}''')
@@ -36,7 +36,7 @@ st.latex(r'''\begin{aligned}{\tilde w}&=\arg \mathop{\max}\limits_{w}\Sigma_{i=1
 st.markdown("## 1.1逻辑回归")
 ####################################逻辑回归模型######################################
 st.markdown("### 1.1.1 逻辑回归模型")
-st.markdown("&emsp;&emsp;逻辑回归是用来做分类算法的。把线性回归的结果$Y$代入一个非线性变换的$ sigmoid$函数中，\
+st.markdown("&emsp;&emsp;逻辑回归是用来做分类算法的。把线性回归的结果$\mathbf y$代入一个非线性变换的$ sigmoid$函数中，\
       即可得到$[0,1]$之间取值范围的数$S$，$S$可以把它看成是一个概率值，如果设置概率阈值为$0.5$，那么$S$大于$0.5$可以看成是正样本，\
             小于$0.5$看成是负样本，就可以进行分类。$sigmoid$函数公式如下：")
 st.latex(r'''\begin{aligned}sigmoid(x)=\frac{1}{1+e^{-x}}\end{aligned} \tag {1.1}''')
@@ -65,7 +65,7 @@ st.markdown("&emsp;&emsp;更进一步，可以尝试将公式用矩阵乘法的�
 st.latex(r'''\begin{aligned} 
 \displaystyle \frac{\partial L(w)}{\partial w}&=\Sigma_{i=1}^{n}~(y^{*}_{i}-y_{i})x_{i} \\ 
 &=(x_{1},x_{2},...,x_{n})(y_{1}^{*}-y_{1},y_{2}^{*}-y_{2},...,y_{n}^{*}-y_{n})^T \\
-&= X^T(Y^*-Y) \end{aligned} \tag{1.6}''')
+&= X^T(\mathbf y^*-\mathbf y) \end{aligned} \tag{1.6}''')
 
 st.markdown("&emsp;&emsp;再看损失函数关于参数向量的二阶导，即海森矩阵：")
 st.latex(r'''\begin{aligned} \displaystyle\frac{\partial L^{2}(w)} {\partial w \partial w^T}&=\Sigma_{i=1}^{n}~\frac{e^{w^Tx_{i}}}{1+e^{w^Tx_{i}}}x_{i}x_{i}^T \in R^{m \times m} \\ 
