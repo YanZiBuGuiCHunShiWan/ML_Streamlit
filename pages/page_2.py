@@ -3,6 +3,21 @@ import streamlit as st
 #左边侧栏的显示
 st.sidebar.markdown("## 逻辑回归 ❄️")
 st.write("Welcome to my 3 space~")
+#########################################符号约定#################################################
+
+with st.expander("在正式学习算法课程之前，我们要先明确一下符号的定义，以免在后继学习中混淆概念~"):
+      st.markdown("##### 样本矩阵与向量的符号定义如下：")
+      st.markdown("###### &emsp;&emsp;样本矩阵")
+      st.latex(r'''X=\begin{pmatrix}\mathbf {x_1} & \mathbf {x_2}&{\cdots}&\mathbf {x_n}\end{pmatrix}^T=\begin{pmatrix} \mathbf x_1^T \\  \mathbf x_2^T \\ {\vdots} \\ \mathbf x_n^T \end{pmatrix} \
+            = \begin{pmatrix} x_{11} & x_{12} & {\cdots} & x_{1m} \\  x_{21} & x_{22} & {\cdots} & x_{2m}\\ {\vdots} &{\vdots} &{}&{\vdots} \\x_{n1} & x_{n2} & {\cdots} & x_{nm} \end{pmatrix}\
+                  \in R^{n\times m}''')
+      st.markdown("###### &emsp;&emsp;样本向量")
+      st.latex(r'''\mathbf {x_i}=\begin{pmatrix} x_{11} & x_{12}&{\cdots}&x_{1m}\end{pmatrix}^T=\begin{pmatrix} x_{i1} \\  x_{i2} \\ {\vdots} \\ x_{in} \end{pmatrix}\in R^{m\times 1} ''')
+      st.markdown("###### &emsp;&emsp;参数向量")
+      st.latex(r'''\mathbf w=\begin{pmatrix} w_{1} & w_{2}&{\cdots}&w_{m}\end{pmatrix}^T=\begin{pmatrix} w_{1} \\  w_{2} \\ {\vdots} \\ w_{m} \end{pmatrix}\in R^{m\times 1} ''')
+      st.markdown("###### &emsp;&emsp;标签向量")
+      st.latex(r'''\mathbf y=\begin{pmatrix} y_{1} & y_{2}&{\cdots}&y_{n}\end{pmatrix}^T=\begin{pmatrix} y_{1} \\  y_{2} \\ {\vdots} \\ y_{n} \end{pmatrix}\in R^{n\times 1} ''')
+      
 
 st.markdown("## 1.0线性回归")
 st.latex(r'''X=(x_1,x_2,...,x_n)^T=
@@ -12,7 +27,7 @@ st.latex(r'''X=(x_1,x_2,...,x_n)^T=
 \end{bmatrix}''')
 
 st.latex("\sum_{i=1}^{n}")
-st.latex(r'''\begin{aligned}{\tilde w}&=\arg \mathop{\max}\limits_{w}\Sigma_{i=1}^{n}\lnp(y_i|x_i;w) \\ 
+st.latex(r'''\begin{aligned}{\tilde w}&=\arg \mathop{\max}\limits_{w}\Sigma_{i=1}^{n}\ln{p}(y_i|x_i;w) \\ 
 &= \arg \mathop{\max}\limits_{w}\Sigma_{i=1}^{n}\ln(exp\left\{{-(\frac{(y_i-(w^Tx_i+b))^2}{2\sigma^2})}\right\}) \\ 
 &=\arg \mathop{\min}\limits_{w}\Sigma_{i=1}^{n}\frac{(y_i-(w^Tx_i+b))^2}{2\sigma^2} \\ 
 &\propto \arg\mathop{\min}\limits_{w}\Sigma_{i=1}^{n}(y_i-(w^Tx_i+b))^2\end{aligned} ''')
@@ -58,8 +73,9 @@ st.latex(r'''\begin{aligned} \displaystyle\frac{\partial L^{2}(w)} {\partial w \
 &=x_{1}p(y_{1}=1|x_{1};w)x_{1}^T+x_{2}p(y_{2}=1|x_{2};w)x_{2}^T+....+x_{n}p(y_{n}=1|x_{n};w)x_{n}^T  \\ 
 &=(x_1,x_2,...,x_n) \begin{pmatrix} { p(y_{1}=1|x_{1};w)} & {0 } & { \cdots } & { 0 } \\ { 0 } & { p(y_{2}=1|x_{2};w) } & { \cdots } & { 0 } \\ { \vdots } & { \vdots } & { } & { \vdots } \\ { 0} & { 0 } & { \cdots } & {p(y_{n}=1|x_{n};w)} \end{pmatrix}(x_1,x_2,...,x_n)^T \\ 
 &=X^TDiag(P)X \end{aligned}''')
-st.markdown("&emsp;&emsp;$Diag(P)$对角线上的元素一定大于$0$，很容易证明该矩阵 $X^TDiag(P)X \succeq 0$,所以损失函数是一个凸函数，没有局部最优。") 
+st.markdown("&emsp;&emsp;$Diag(P)$对角线上的元素一定大于$0$，很容易证明该矩阵 $X^TDiag(P)X \succeq 0$，即损失函数的二阶导-海森矩阵半正定，所以损失函数是一个凸函数，没有局部最优。") 
  
-st.markdown("##### 恭喜你完成本章阅读，以下是考察你知识掌握情况的选择题，请耐心作答噢！✏️")
+st.empty()
+st.markdown("##### 恭喜你完成本章阅读，以下是考察你知识掌握情况的选择题，请耐心作答噢！")
 with st.expander('No.1 :blue[我们根据极大似然估计推导出了交叉熵损失，那么逻辑回归的损失是否可以选择平方损失函数呢]'):
       st.markdown("##### 一起揭晓吧")
