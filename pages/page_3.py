@@ -7,6 +7,11 @@ from scipy.stats import norm
 
 st.markdown("# 多元高斯分布 ❄️")
 st.sidebar.markdown("# 多元高斯分布 ❄️")
+st.sidebar.markdown("## 2.1 多元高斯分布的定义")
+st.sidebar.markdown("## 2.2 多元条件高斯分布")
+st.sidebar.markdown("### 2.2.1 趣味环节")
+st.sidebar.markdown("## 2.3 边缘高斯分布")
+st.sidebar.markdown("## 2.4 高斯变量的贝叶斯理论")
 st.write("Welcome to my code space~")
 st.markdown("&emsp;&emsp;在机器学习领域，多元高斯分布是一种重要而强大的概率分布模型，被广泛应用于数据建模和统计推断。它提供了一种灵活且强大的方法来描述和理解不同变量之间的关系，同时也能够通过概率密度函数对数据进行建模。\
 多元高斯分布是一种多维扩展的高斯分布，它可以处理多个特征之间的相关性。与一元高斯分布相比，多元高斯分布能够更好地捕捉到复杂的数据结构，并提供更准确的预测。")
@@ -33,13 +38,13 @@ st.markdown("&emsp;&emsp;可以看到，最终只留下一项，这一项可以�
 
 st.markdown("#### :blue[2.2多元条件高斯分布]")
 st.markdown("本小节是已知联合概率密度，给定$\mathbf {x_b}$的条件下求$\mathbf {x_a}$的条件概率密度")
-st.markdown("&emsp;&emsp;多元高斯分布的一个重要特性是，如果两个变量集联合概率密度服从多元高斯分布，那么给定其中一个集合的情况下另一个集合变量的条件分布也服从多元高斯分布。相似的，边缘概率密度也服从高斯分布。我们将$D$维向量$\mathbf x$分成两部分$\mathbf {x_a} \in R^{M\times 1}$和$\mathbf x_b \in R^{(D-M)\times 1}$，即：")
+st.markdown("&emsp;&emsp;多元高斯分布的一个重要特性是，如果两个变量集联合概率密度服从多元高斯分布，那么给定其中一个集合的情况下另一个集合变量的条件分布也服从多元高斯分布。相似的，边缘概率密度也服从高斯分布。我们将$D$维向量$\mathbf x$分成两部分$\mathbf {x_a} \in R^{M\\times 1}$和$\mathbf x_b \in R^{(D-M)\\times 1}$，即：")
 st.latex(r''' \mathbf x=\begin{pmatrix} \mathbf x_a  \\\mathbf x_b \end{pmatrix},\text{同理有} \mathbf \mu=\begin{pmatrix} \mathbf \mu_a  \\\mathbf \mu_b \end{pmatrix},\mathbf \Sigma=\left( \begin{array} { c c c c } { \mathbf \Sigma_{aa} } & { \mathbf \Sigma_{ab} }  \\ { \mathbf \Sigma_{ba}} & {\mathbf \Sigma_{bb}}   \end{array} \right)''')
 st.markdown("&emsp;&emsp;我们一般将协方差矩阵的逆称作精度矩阵，表示如下：")
 st.latex(r'''\begin{aligned}\mathbf \Lambda \equiv \mathbf \Sigma^{-1},\mathbf \Lambda=\left( \begin{array} { c c c c } { \mathbf \Lambda_{aa} } & { \mathbf \Lambda_{ab} }  \\ { \mathbf \Lambda_{ba}} & {\mathbf \Lambda_{bb}}   \end{array} \right)\end{aligned}''')
 st.markdown("&emsp;&emsp; 思路：我们知道，高斯分布是一个参数模型，如果知道了其均值向量$\mathbf \mu$和协方差矩阵$\mathbf \Sigma$，**那么这个多元高斯分布可以被这两个参数刻画**，所以接下来我们就是为了在给定其中一部分高斯分量的情况下，去求另一部分的均值和协方差。只要能把均值向量和协方差矩阵的表达式明确，那么多元高斯分布的条件概率就能被唯一确认！比如给定$\mathbf x_b$求$p(\mathbf x_a|\mathbf x_b)$,那么我们只需要知道$\mu_{a|b}$和$\mathbf \Sigma_{a|b}$就能确定条件分布。")
 st.markdown("&emsp;&emsp;首先，展开概率密度函数对应的指数内的表达式：")
-st.latex(r'''\begin{aligned}&-\frac{1}{2}(\mathbf x-\mu)^T\Sigma^{-1}(\mathbf x-\mu)=-\frac{1}{2}\mathbf x^T\Sigma^{-1}\mathbf x -\mathbf x\Sigma^{-1}\mu+C,\text{其中}C\text{是和x无关的} \\
+st.latex(r'''\begin{aligned}&-\frac{1}{2}(\mathbf x-\mu)^T\Sigma^{-1}(\mathbf x-\mu)=-\frac{1}{2}\mathbf x^T\Sigma^{-1}\mathbf x -\mathbf x^T\Sigma^{-1}\mu+C,\text{其中}C\text{是和x无关的} \\
 &-\frac{1}{2}(\mathbf x_a-\mu_a)^T\Lambda_{aa}(\mathbf x_a-\mu_a)-\frac{1}{2}(\mathbf x_a-\mu_a)^T\Lambda_{ab}(\mathbf xb-\mu_b) \\
 &-\frac{1}{2}(\mathbf x_b-\mu_b)^T\Lambda_{ba}(\mathbf x_a-\mu_a)-\frac{1}{2}(\mathbf x_b-\mu_b)^T\Lambda_{bb}(\mathbf x_b-\mu_b)\end{aligned}\tag{2.1}''')
 st.markdown("&emsp;&emsp;展开以后有：")
@@ -107,7 +112,7 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 y_observation=st.slider("请选择y维度变量的取值",-10.0,10.0,0.0,0.1)
-xmu_condition_y=x_mu-0.5*(y_observation-y_mu)
+xmu_condition_y=x_mu+2/3*(y_observation-y_mu)
 
 # 生成正态分布数据
 y1 = norm.pdf(x, xmu_condition_y, 1)  # 均值为0，标准差为1的正态分布
