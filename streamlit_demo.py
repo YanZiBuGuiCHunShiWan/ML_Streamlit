@@ -26,7 +26,8 @@ options = [
     "🚀 [pattern recognition and machine learning](https://www.microsoft.com/en-us/research/uploads/prod/2006/01/Bishop-Pattern-Recognition-and-Machine-Learning-2006.pdf)",
     "🔮[统计学习方法](https://github.com/fengdu78/lihang-code)",
     "⚡️[机器学习白板推导系列](https://space.bilibili.com/97068901)",
-    "🌐[speech and language processing](https://web.stanford.edu/~jurafsky/slp3/)"
+    "📘[speech and language processing](https://web.stanford.edu/~jurafsky/slp3/)",
+    "📖[Reinforcement Learning (second edition)](http://incompleteideas.net/book/RLbook2020.pdf)"
 ]
 
 for i,option in enumerate(options):
