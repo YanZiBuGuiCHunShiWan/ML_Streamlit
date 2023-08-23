@@ -5,12 +5,6 @@ def reinforcement_foundation():
     st.sidebar.markdown("## 10.2 强化学习的最终目的")
     st.sidebar.markdown("### &emsp;10.2.1 策略和价值函数")
     st.sidebar.markdown("### &emsp;10.2.2 最优策略和最优价值函数")
-    st.sidebar.markdown("## 10.3 动态规划")
-    st.sidebar.markdown("### &emsp;10.3.1 策略评估")
-    st.sidebar.markdown("#### &emsp;&emsp;10.3.1.1迭代策略评估")
-    st.sidebar.markdown("### &emsp;10.3.2 策略改进")
-    st.sidebar.markdown("### &emsp;10.3.2 策略迭代")
-    st.sidebar.markdown("### &emsp;10.3.3 价值迭代")
     st.markdown("### :blue[10.1强化学习简介]")
     st.markdown("### :blue[10.2强化学习的最终目的]")
     st.latex(r'''\begin{aligned} G_t&=R_{t+1}+\gamma R_{t+2}+\gamma^2 R_{t+3}+ ... +\gamma^{T-1} R_{T} \\
@@ -48,22 +42,65 @@ def reinforcement_foundation():
         &=\max_a \sum_{s',r} p(s',r|s,a) [r+\gamma v_{\pi}(s')]\end{aligned} \tag{10.7}''')
     st.markdown("&emsp;&emsp;$q_*$的贝尔曼最优方程如下：")
     st.latex(r'''\begin{aligned}q_{*}(s,a)=\sum_{s',r} p(s',r|s,a) [r+\gamma \max_{a'\in \mathcal A}q_{*}(s',a')] \end{aligned} \tag{10.8}''')
-    st.markdown("### :blue[10.3 动态规划]")
-    st.markdown("#### :blue[10.3.1 策略评估]")
-    st.markdown("&emsp;&emsp;我们要计算出状态价值函数来才能进一步评估策略的好坏，因此接下来介绍如何计算出具体的状态价值函数。我们的条件是：给定$MDP$,即我们知道\
-        $p(s',r|s,a)$和策略$\pi$的条件下求$v_{\pi}(s)$的表达式。由先前$10.4$可知：")
+    
+    
+def reinforcement_dynamic_programming():
+    st.sidebar.markdown("## 10.3 动态规划")
+    st.sidebar.markdown("### &emsp;10.3.1 策略评估")
+    st.sidebar.markdown("#### &emsp;&emsp;10.3.1.1迭代策略评估")
+    st.sidebar.markdown("### &emsp;10.3.2 策略改进")
+    st.sidebar.markdown("### &emsp;10.3.2 策略迭代")
+    st.sidebar.markdown("### &emsp;10.3.3 价值迭代")
+    st.sidebar.markdown("### &emsp;10.3.4 异步动态规划")
+    st.sidebar.markdown("### &emsp;10.3.5 广义策略迭代")
+    st.markdown("## :blue[10.3 动态规划]")
+    st.markdown("### :blue[10.3.1 策略评估]")
+    st.markdown("&emsp;&emsp;我们要计算出状态价值函数来才能进一步评估策略的好坏，因此接下来介绍如何计算出具体的状态价值函数。我们的条件是：给定$MDP$，:red[即我们知道\
+        $p(s',r|s,a)$和策略$\pi$的条件下]求$v_{\pi}(s)$的表达式。由先前$10.4$可知：")
     st.latex(r'''\begin{aligned}v_{\pi}(s)&=\sum_{a \in \mathcal A}\pi(a|s)\sum_{s',r} p(s',r|s,a) [r+\gamma v_{\pi}(s')] \\
         &=\sum_{a \in \mathcal A}\pi(a|s)\sum_{s',r} rp(s',r|s,a)+\gamma \sum_{a \in \mathcal A}\pi(a|s) \sum_{s',r}p(s',r|s,a)v_{\pi}(s') \\
             &=\underbrace {\sum_{a \in \mathcal A}\pi(a|s)\sum_{r} rp(r|s,a)}_{\text{\textcircled a}}+\underbrace{\gamma \sum_{a \in \mathcal A}\pi(a|s)\sum_{s'} p(s'|s,a)v_{\pi}(s')}_{\text{\textcircled b}}\end{aligned}''')
-    st.markdown("##### :blue[10.3.1.1 迭代策略评估]")
+    st.markdown("#### :blue[10.3.1.1 迭代策略评估]")
     st.markdown("&emsp;&emsp;解析解虽然能写出来，但是直接求解时间复杂度太高了，因此通常用数值解来求解最优策略，我们的目标是求出：")
-    st.latex(r'''V_{\pi}(s)=\begin{pmatrix} v_*(s_1)  \\ {\vdots} \\ v_*(|\mathcal S|) \end{pmatrix}''')
+    st.latex(r'''\mathbf v_{\pi}(s)=\begin{pmatrix} v_*(s_1)  \\ {\vdots} \\ v_*(s_{|\mathcal S|}) \end{pmatrix}''')
     st.markdown("&emsp;&emsp;在迭代的策略评估中，我们初始化一组序列$\{ v_k\}_{k=1}^{\infin}$，然后按照如下方程进行更新：")
     st.latex(r'''\begin{aligned}v_{k+1}(s)&≐\mathbb E_{\pi}[R_{t+1}+\gamma v_k(S_{t+1})|S_t=s] \\
         &=\sum_{a \in \mathcal A}\pi(a|s)\sum_{s',r} p(s',r|s,a) [r+\gamma v_{k}(s')]\end{aligned} \tag{10.9}''')
-    st.markdown("&emsp;&emsp;最终一定会收敛到$v_{\pi}$，具体就不在此证明了。")
+    st.markdown("&emsp;&emsp;最终一定会收敛到$v_{\pi}$。")
+#     st.latex(r'''\begin{aligned}
+# v_{k+1}\left(s_{1}\right)= & c_{11} v_{k}\left(s_{1}\right)+c_{12} v_{k}\left(s_{2}\right)+\cdots+c_{1 n} v_{k}\left(s_{n}\right)+b_{1} \\
+# v_{k+1}\left(s_{2}\right)= & c_{21} v_{k}\left(s_{1}\right)+c_{22} v_{k}\left(s_{2}\right)+\cdots+c_{2 n} v_{k}\left(s_{n}\right)+b_{2} \\
+# & \vdots \\
+# v_{k+1}\left(s_{n}\right)= & c_{n 1} v_{k}\left(s_{1}\right)+c_{n 2} v_{k}\left(s_{2}\right)+\cdots+c_{n n} v_{k}\left(s_{n}\right)+b_{n}
+# \end{aligned}''')
     
-    st.markdown("#### :blue[10.3.2 策略改进]")
+#     st.latex(r'''\begin{array}{c}
+# \mathbf{C}=\left[\begin{array}{cccc}
+# c_{11} & c_{12} & \cdots & c_{1 n} \\
+# c_{21} & c_{22} & \cdots & c_{2 n} \\
+# \vdots & \vdots & \ddots & \vdots \\
+# c_{n 1} & c_{n 2} & \cdots & c_{n n}
+# \end{array}\right] ,\mathbf{b}=\left[\begin{array}{c}
+# b_{1} \\
+# b_{2} \\
+# \vdots \\
+# b_{n}
+# \end{array}\right]
+# \end{array}''')
+#     st.markdown("&emsp;&emsp;我们可以用矩阵乘法来描述策略迭代的过程：")
+#     st.latex(r'''\mathbf{v}_{k+1}=\mathbf{C} \mathbf{v}_{k}+\mathbf{b}''')
+#     st.markdown("&emsp;&emsp;根据数值分析的知识，上述方程组迭代法收敛的充分必要条件是：")
+#     st.latex(r'''\lim_{k\rightarrow \infty} \mathbf C^k=\mathbf O''')
+#     st.markdown("&emsp;&emsp;而我们有：")
+#     st.latex(r'''\begin{aligned}
+#     c_{i j} & =\sum_{a} \pi\left(a \mid s_{i}\right) \sum_{r} p\left(s_{j}, r \mid s_{i}, a\right) \gamma \\
+#     & \leq \sum_{a} \pi\left(a \mid s_{i}\right) \sum_{s_{j}, r} p\left(s_{j}, r \mid s_{i}, a\right) \gamma=\gamma \\
+#     & b_{i}=\sum_{a} \pi\left(a \mid s_{i}\right) \sum_{r} p\left(r \mid s_{i}, a\right) r
+#     \end{aligned}''')
+#     st.markdown("&emsp;&emsp;故：")
+#     st.latex(r'''\lim_{k\rightarrow \infty} \mathbf C^k=                         ''')
+    st.markdown("### :blue[10.3.2 策略改进解]")
+    
     st.markdown("&emsp;&emsp;当计算出了价值函数，我们就能评估策略的好坏，但对于某个状态，我们想知道是否应该选择不同于给定的策略的动作$a \\neq \pi(s)$，因为我们不清楚选择其他策略以后得到的结果会更好还是更坏。\
         最直观的办法是，直接计算$v_{\pi}(s)$和新策略对应的$v_{\pi '}(s)$，比较二者大小就知道策略好坏，但是实际情况下计算新的状态函数是要消耗资源的，有没有其他的办法能更简洁地判断呢？")
     st.markdown("&emsp;&emsp;我们有:blue[策略改进定理]能更简洁地告诉我们如何改进策略。内容如下：如果$\pi$和$\pi '$是两个确定的策略，如果对于任意$s \in \mathcal S$，我们有：")
@@ -96,13 +133,31 @@ def reinforcement_foundation():
                  &=\argmax_a \sum_{s',r} p(r,s'|s,a)[r+\gamma v_{\pi}(s')]\end{aligned} \tag{10.11}''')
     st.markdown("&emsp;&emsp;式$10.11$和式$10.7$贝尔曼最优方程一样，所以说$v_{\pi}=v_{\pi'}$时原策略$\pi$和贪心策略改进得到的新策略$\pi'$就是最优的策略。")
     
-    
-    st.markdown("#### :blue[10.3.3 策略迭代]")
-    st.markdown("#### :blue[10.3.4 价值迭代] ")
-    
+    st.markdown("### :blue[10.3.3 策略迭代]")
+    st.markdown("&emsp;&emsp;所谓策略迭代，就是指迭代地找到最优策略$\pi_*$的过程，我们在前面两小节讲了策略评估和策略改进，实际上策略迭代就是这两个过程的结合。不断地交替两个过程从而找到最优策略。")
+    st.latex(r'''\pi_0 \xrightarrow{Evaluate} v_{\pi_0} \xrightarrow{Improve} \pi_1 \xrightarrow{Evaluate} v_{\pi_1} \xrightarrow{Improve} \cdots \pi_* \xrightarrow{Evaluate} v_{\pi_*} ''')
+    st.markdown("&emsp;&emsp;在有限马尔可夫决策过程中，整个定义空间都是有限的，策略也必然是有限的，在我们的交替过程中，值函数单调上升且显然有上界，当策略迭代过程执行一定步数后，策略必然能收敛到最优策略。策略迭代算法过程可见下图：")
+    st.image("src/policy_iteration.png")
+    st.markdown("&emsp;&emsp;可见在策略评估这一步要进行一个循环，然后到了策略改进又要进行一个循环，所以原始的策略迭代算法是比较耗时间的。;值得注意的是，价值迭代只是在策略评估这一过程中只走一步，并不代表不进行策略改进。")
+    st.markdown("### :blue[10.3.4 价值迭代] ")
+    st.markdown("&emsp;&emsp;实际上我们可以提前截断策略评估过程，并且不影响其收敛性，最极端的一种情况就是在对每个状态进行一次\
+        更新后就停止策略评估，该算法称为:red[价值迭代]。")
+    st.latex(r'''\begin{aligned} v_{k+1}(s)&≐\max_a\sum_{r,s'}p(s',r|r,s)(r+\gamma v_{k}(s')) \end{aligned} \tag{10.12}''')
+    st.markdown("&emsp;&emsp;算法的具体过程如下图：实际上就是结合了策略评估和策略迭代，非常暴力。当然，:red[可以认为价值迭代是一种特殊的策略迭代。]")
+    st.image("src/value_iteration.png")
+    st.markdown("## :blue[10.4 异步动态规划]")
+    st.markdown("&emsp;&emsp;在前述的迭代方法中，我们每走一步，都需要对所有的$v_{\pi}(s),s\in\mathcal S$进行更新，当状态空间非常大时，走一步的耗时也是非常高的。因此，我们可以考虑不去更新所有的状态，而是优先更新我们认为值得更新的状态，异步价值迭代的其中一个版本就是\
+        利用截至迭代的更新公式$10.12$，在每一步的基础上只更新一个状态$s_k$。如果$0\leq\gamma\leq 1$，则只要所有状态都在序列$\{v_k\}$中出现无数次，就能保证渐近收敛到$v_*$。")
+    st.markdown("## :blue[10.5 广义策略迭代]")
+    st.image("src/GPI.png")
+    st.markdown("&emsp;&emsp;广义策略迭代(Generalized Policy Iteration (GPI))就是描述策略评估和策略改进交替进行的过程，几乎所有的强化学习方法都能很好地被描述为 GPI 模型。\
+       ")
+    st.markdown("&emsp;&emsp; 广义策略迭代中的策略评估和策略改进的过程就如同'竞争和协作'的关系，评估过程旨在提供准确的信息和反馈，以便于制定改进策略的决策，策略改进的目标是寻找更好的策略来最大化性能。它可以采用不同的方法，如价值迭代、策略迭代或蒙特卡洛方法等，以搜索更优的行动或策略。改进过程会尝试探索其他可能的策略，并与当前策略进行比较，以确定哪些行动或策略更能提高性能，这是二者间'竞争性'的体现，\
+        另一方面，评估过程提供了改进过程所需的关键信息和指导，帮助确定改进的方向。改进过程的结果又会被用于评估过程中验证和确定改进后的策略的优劣。通过循环迭代并相互协作，评估和改进过程共同促进了策略的优化。")
     
 def reinforcement_montecarlo():
-    st.markdown(":blue[学习中...........................]")
+    st.markdown("## :blue[10.4 蒙特卡洛方法]")
+    st.markdown("&emsp;&emsp;在前一章中，我们学习的是如何利用动态规划的方式求解出最终的策略$\pi$，这种方法有一个:red[前提就是动态特性$p(r,s'|s,a)$必须已知。]但是在绝大部分情况下，我们很难得到显示的分布，但是从希望的分布进行采样则较为容易。")
     pass
 
 def reinforcement_gradient_policy():
@@ -117,9 +172,10 @@ def reinforcement_TimeDifference():
 def reinforcement_ppo_family():
     st.title("PPO")
     st.markdown("&emsp;&emsp;PPO 是一种属于策略梯度算法的改进方法，旨在解决传统策略梯度算法中的一些问题，例如样本效率和迭代稳定性。PPO 提出了一种基于重要性采样比例和截断优化的策略更新方式，以提高采样数据的利用效率，并通过一定的限制确保策略更新的稳定性。")
-
+    
 pages={
     "强化学习基础": reinforcement_foundation,
+    "动态规划": reinforcement_dynamic_programming,
     "蒙特卡洛方法": reinforcement_montecarlo,
     "时序差分方法": reinforcement_TimeDifference,
     "策略梯度方法": reinforcement_gradient_policy,
