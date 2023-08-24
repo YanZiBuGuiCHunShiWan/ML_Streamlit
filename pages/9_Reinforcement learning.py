@@ -158,8 +158,58 @@ def reinforcement_dynamic_programming():
 def reinforcement_montecarlo():
     st.markdown("## :blue[10.4 蒙特卡洛方法]")
     st.markdown("&emsp;&emsp;在前一章中，我们学习的是如何利用动态规划的方式求解出最终的策略$\pi$，这种方法有一个:red[前提就是动态特性$p(r,s'|s,a)$必须已知。]但是在绝大部分情况下，我们很难得到显示的分布，但是从希望的分布进行采样则较为容易。")
-    pass
-
+    st.markdown("&emsp;&emsp;我们知道状态价值函数是从该状态开始的期望回报，虽然我们不知道动态特性，但是如果有回报的观测值即经验，那么随着越来越多的回报被观测到，我们可以用回报的均值来近似状态价值。这就是蒙特卡洛方法的思想。")
+    st.markdown("### :blue[10.4.1 状态价值的估计] ")
+    st.markdown("- **首次访问型估计** ")
+    st.markdown("&emsp;&emsp;假设给定策略$\pi$下途径状态$s$的多幕数据，这组多幕数据中，状态$s$可能会被多次访问到，我们称第一次访问为$s$的是$s$**的首次访问**。而首次访问型MC算法就是用状态$s$的所有首次访问的回报的平均值估计$v_{\pi}(s)$。\
+        即$v_{\pi}(s) \\approx \\frac{1}{N} \\sum_{i=1}^N G_t^{(i)}$。")
+    st.markdown("&emsp;&emsp;下图展示的是首次访问型MC估计状态价值的原理：")
+    st.image("src/mc_value.jpg")
+    st.markdown("&emsp;&emsp;伪代码如下图，我们只计算每一幕数据中状态$s$首次出现后的回报的期望，当这一幕数据中再次遇到状态$s$时，我们忽略。")
+    st.image("src/mc_value_pscode.png")
+    st.markdown("- **每次访问型估计** ")
+    
+    st.markdown("### :blue[10.4.2 动作价值的估计] ")
+    st.markdown("&emsp;&emsp;和状态价值估计类似，动作价值的蒙特卡洛估计需要对“状态-动作”二元组$(s,a)$访问，首次访问型MC则会将每一幕首次访问到这个“状态-动作”\
+        二元组得到的回报的平均值作为动作价值的近似。和先前一样，当对每个“动作-价值”二元组的访问次数趋向于无穷时，这些方法会收敛到动作价值函数的真实期望值。")
+    st.markdown("&emsp;&emsp;虽然想法很好，但是我们不能忽略这样的一个可能性，即某一项“动作-状态”二元组是永远不会被访问到的，因为$\pi$是一个确定性策略时，那么遵循该确定性策略意味着\
+        每一个状态只会观测到一个确定动作的回报，在无法获取其他动作的回报时蒙特卡洛算法无法根据经验改善动作价值函数的估计。")
+    st.markdown("&emsp;&emsp;为实现动作价值函数的估计，我们有:blue[**试探性出发假设**]，即所有的“动作-状态”二元组都有非零的概率被选择为一幕数据的起点，这样可以保证\
+                在采样的幕数趋于无穷时，每一个“动作-状态”二元组都会被访问到无数次。但是在真实环境下，制造满足该假设的条件可能根本没有办法做到，因此试探性出发假设只是理论上能做到。\
+                    想要真正的估计动作价值函数，那么:blue[**无限幕数据**]和:blue[**满足试探性出发假设**]这两点是必须要克服的。")
+    st.markdown("### :blue[10.4.3 蒙特卡洛控制]")
+    st.markdown("&emsp;&emsp;:red[为了得到一个实际可应用的算法，我们必须想办法去除这两个假设]。我们先保留试探性假设出发来完成完整的蒙特卡洛控制(在这里将蒙特卡洛采样称作蒙特卡洛控制)。在进行策略评估时的无限多幕数据这一假设，实际上比较好去除。\
+        和价值迭代的思想类似，我们不期望动作价值函数要经过很多步的迭代后接近真实值，而是每一幕结束后使用观测到的回报进行策略评估，然后在改幕序列访问到的每一个状态上进行策略改进。策略改进\
+            就是上一章的贪心策略，即$\pi'(s)=\\argmax_{a} q_{\pi}(s,a)$。")
+    st.markdown("### :blue[10.4.4 没有试探性出发假设的蒙特卡洛控制]")
+    st.markdown("&emsp;&emsp;为了绕开难以满足的试探性出发假设，我们有两种方法：（1）同归策略$(on-policy)$ （2）离轨策略$(off-policy)$。在同归策略中，:red[用于生成采样数据序列的策略\
+        和用于实际决策的待评估与改进的策略是相同的]；在离轨策略中，:red[用于评估和改进的策略与生成采样数据的策略是不同的]。")
+    st.markdown("&emsp;&emsp;在同轨策略中，策略一般都是软性的，即$\\forall s \in \mathcal S,a \in \mathcal A$有$\pi(a|s)\gt 0$。它们会渐渐地逼近确定性的策略，下面介绍的同轨策略方法\
+        称为:blue[$\\varepsilon$-贪心策略]：")
+    st.latex(r'''\pi^{\prime}(a \mid s)=\left\{\begin{array}{ll}
+       1-\varepsilon+\frac{\varepsilon}{|\mathcal{A}(s)|} & , if \text { } a=a^*=\argmax_aq_{\pi}(s,a)\\
+        \frac{\varepsilon}{|\mathcal{A}(s)|} & , \text { otherwise }    
+        \end{array}\right. \tag{10.13}''')
+    st.markdown("&emsp;&emsp;有了这个策略，我们当然需要比较这个策略和原有策略的好坏，和策略评估那一章一样，我们比较$q_{\pi}(s,\pi'(s))$和$v_{\pi}(s)$的大小。")
+    st.latex(r'''\begin{aligned} q_{\pi}(s,\pi'(s))&=\sum_{a}\pi(a|s)q_{\pi}(s,a) \\
+        &=\frac{\varepsilon}{|\mathcal{A}(s)|} \sum_{a} q_{\pi}(s, a)+(1-\varepsilon) \max _{a} q_{\pi}(s, a) \end{aligned} \tag{10.14}''')
+    st.markdown("&emsp;&emsp;我们的目的是比较大小，而比较大小肯定涉及到缩放，而缩放则会自然地想到在$\max$这个符号项做文章。可以确定的是$\max_{a}q_{\pi}(s,a)\geq q_{\pi}(s,a)$。")
+    st.latex(r'''\begin{aligned} 1=\frac{\sum_a \pi(a|s)-\frac{\varepsilon}{|\mathcal A(s)|}}{1-\varepsilon}  \end{aligned} \tag{10.15}''')
+    st.markdown("&emsp;&emsp;故有：")
+    st.latex(r'''\begin{aligned}({1-\varepsilon})\max_{a}q_{\pi}(s,a)&\geq ({\sum_a \pi(a|s)-\frac{\varepsilon}{|\mathcal A(s)|}})q_{\pi}(s,a)\\
+        &={\sum_a \pi(a|s)q_{\pi}(s,a)-\frac{\varepsilon}{|\mathcal A(s)|}}q_{\pi}(s,a)\end{aligned} \tag{10.16}''')
+    st.markdown("&emsp;&emsp;上述结果带入到$10.14$则有：")
+    st.latex(r'''\begin{aligned} q_{\pi}(s,\pi'(s))&=\frac{\varepsilon}{|\mathcal{A}(s)|} \sum_{a} q_{\pi}(s, a)+(1-\varepsilon) \max _{a} q_{\pi}(s, a) \\
+            &\geq \frac{\varepsilon}{|\mathcal{A}(s)|} \sum_{a} q_{\pi}(s, a) + {\sum_a \pi(a|s)q_{\pi}(s,a)-\frac{\varepsilon}{|\mathcal A(s)|}}q_{\pi}(s,a) \\
+                &\geq \sum_a \pi(a|s)q_{\pi}(s,a) \\
+                    &\geq v_{\pi}(s) \end{aligned} \tag{10.17}''')
+    st.markdown("&emsp;&emsp;故有$\pi' \geq \pi$。")
+    st.markdown("### :blue[10.4.5 基于重要度采样的离轨策略]")
+    
+    
+    
+    
+    
 def reinforcement_gradient_policy():
     st.title("策略梯度方法")
     st.markdown("&emsp;&emsp;在强化学习中，。。。。")
