@@ -1,6 +1,6 @@
 # 心理学与机器学习领域知识分享
 
-![homepage](src/homepage.png)
+![homepage](./src/homepage.png)
 
 # 大纲
 
