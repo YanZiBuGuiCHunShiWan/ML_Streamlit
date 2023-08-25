@@ -1,19 +1,19 @@
 # 心理学与机器学习领域知识分享
 
-![homepage](src\homepage.png)
+![homepage](src/homepage.png)
 
 # 大纲
 
 - Foundation
-- Guassian Distribution**（基本完成）**
+- Guassian Distribution（基本完成）
 - Linear Models For Regression
 - Linear Models For Classification
 - Kernel Methods
 - Graphic Model
-- Approximation Inference**（正在更新）**
+- Approximation Inference（正在更新）
 - Sampling Methods
 - Natural Language Processing
-- Reinforcement learning**（正在更新）**
+- Reinforcement learning（正在更新）
 - Daily Notes
 
 # 长期规划
