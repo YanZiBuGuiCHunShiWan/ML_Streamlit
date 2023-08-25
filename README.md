@@ -1,5 +1,7 @@
 # 心理学与机器学习领域知识分享
 
+​		[点击访问](https://mlapp-yanzibuguichunshiwan.streamlit.app/Guassian_Distribution)
+
 ![homepage](./src/homepage.png)
 
 # 大纲
@@ -15,6 +17,12 @@
 - Natural Language Processing
 - Reinforcement learning（正在更新）
 - Daily Notes
+
+# 运行
+
+```shell
+streamlit run streamlit_demo.py
+```
 
 # 长期规划
 
