@@ -233,13 +233,47 @@ def reinforcement_TimeDifference():
     st.markdown("## :blue[10.4 时序差分算法]")
     st.markdown("### :blue[10.4.1 TD Prediction]")
     st.markdown("&emsp;&emsp;让我们先回顾一下每次访问型的蒙特卡洛方法的状态价值函数估计：")
+    st.latex(r'''V\left(S_{t}\right) \leftarrow V\left(S_{t}\right)+\alpha\left[G_{t}-V\left(S_{t}\right)\right]''')
+    st.markdown("&emsp;&emsp;上式中，$G_t$是通过不断采样，即走了很多步以后算出来的值；蒙特卡洛方法必须等待整幕数据结束以后才会进行一次更新。")
+    st.markdown("&emsp;&emsp;本章的时序差分算法$TD(0)$的状态价值更新公式为：")
+    st.latex(r'''V\left(S_{t}\right) \leftarrow V\left(S_{t}\right)+\alpha\left[R_{t+1}+\gamma V\left(S_{t+1}\right)-V\left(S_{t}\right)\right]''')
+    st.markdown("&emsp;&emsp;TD(0)的更新公式的右半部分括号内实际上是一种误差，衡量的是$S_t$估计值与$R_t+\\gamma V(S_{t+1})$之间的差异。这个数值称作$TD$误差。")
+    st.latex(r'''\delta_{t} \doteq R_{t+1}+\gamma V\left(S_{t+1}\right)-V\left(S_{t}\right)''')
     
+    st.markdown("### :blue[10.4.2 Advantages of TD Prediction Methods]")
+    st.markdown("&emsp;&emsp;接下来看一个马尔可夫收益过程的例子（没有动作）：")
+    st.image("src/RL-TD-adv.png")
+    st.markdown("&emsp;&emsp;根据状态和收益转移图我们可以列出以下方程：（:red[我们用$P_i$来表示当我们处于状态 i 下，最终能到达右终止态的概率]）")
+    st.latex(r'''\left\{\begin{aligned}
+P_{a} & =\frac{1}{2} P_{b}+\frac{1}{2} \times 0 \\
+P_{b} & =\frac{1}{2} P_{a}+\frac{1}{2} P_{c} \\
+P_{c} & =\frac{1}{2} P_{b}+\frac{1}{2} P_{d} \\
+P_{d} & =\frac{1}{2} P_{c}+\frac{1}{2} P_{e} \\
+P_{e} & =\frac{1}{2} P_{d}+\frac{1}{2} \times 1
+\end{aligned}\right. \tag{10.20}''')
+    st.latex(r''' \Rightarrow P_{a}=\frac{1}{6}, P_{b}=\frac{2}{6}, P_{c}=\frac{3}{6}, P_{d}=\frac{4}{6}, P_{e}=\frac{5}{6}''')
+    st.markdown("&emsp;&emsp;由于只有状态$E$转移到终止状态会获得收益$+1$，因此这些状态价值就等于对应的状态概率。")
+    st.markdown("&emsp;&emsp;下图展示了时序差分方法和蒙特卡洛方法在该任务上的表现：")
+    st.image("src/RL-TD-adv2.png")
+    st.markdown("&emsp;&emsp;左子图显示的是$TD$算法分别运行$1、10、100$次后与真实值的比较。可见当运行$100$次以后预测效果就十分接近真实值了。右子图则对比了\
+        时序差分和蒙特卡洛方法在不同$\\alpha$取值下的误差收敛情况，可以明显观察到，在该任务上，时序差分方法收俩速度显著快于蒙特卡洛方法，且误差更小。")
+    st.markdown("&emsp;&emsp;$TD$方法则只需等到这一步结束，利用实时观测到的奖励值和现有估计值来进行更新。$TD$算法的优点如下：:blue[1.无须知道动态特性。2.蒙特卡洛方法在幕数很长时有较大的延时问题，TD方法能够解决这种问题，可以通过在线、实时的方式进行增量更新。]")
+    st.markdown("### :blue[10.4.3 Optimality of TD(0)]")
+    st.markdown("### :blue[10.4.4 SARSA: On-policy TD Control]")
+    st.markdown("&emsp;&emsp;时序差分算法的动作价值估计时，对于同轨策略，我们遵循当前策略$\pi$生成的数据（状态$s$和动作$a$）来估计$q_{\pi}(s,a)$")
+    st.image("src/RL-TD-SARSA1.png")
+    st.markdown("### :blue[10.4.5 Q-Learning: On-policy TD Control]")
+    st.markdown("### :blue[10.4.6 Expected SARSA]")
     pass
 def reinforcement_ppo_family():
     st.title("PPO")
     st.markdown("&emsp;&emsp;PPO 是一种属于策略梯度算法的改进方法，旨在解决传统策略梯度算法中的一些问题，例如样本效率和迭代稳定性。PPO 提出了一种基于重要性采样比例和截断优化的策略更新方式，以提高采样数据的利用效率，并通过一定的限制确保策略更新的稳定性。")
     
+def reinforcement_prev():
+    st.title("强化学导论")
+    
 pages={
+    "强化学习导论": reinforcement_prev,
     "强化学习基础": reinforcement_foundation,
     "动态规划": reinforcement_dynamic_programming,
     "蒙特卡洛方法": reinforcement_montecarlo,
