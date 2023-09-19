@@ -259,11 +259,30 @@ P_{e} & =\frac{1}{2} P_{d}+\frac{1}{2} \times 1
         时序差分和蒙特卡洛方法在不同$\\alpha$取值下的误差收敛情况，可以明显观察到，在该任务上，时序差分方法收俩速度显著快于蒙特卡洛方法，且误差更小。")
     st.markdown("&emsp;&emsp;$TD$方法则只需等到这一步结束，利用实时观测到的奖励值和现有估计值来进行更新。$TD$算法的优点如下：:blue[1.无须知道动态特性。2.蒙特卡洛方法在幕数很长时有较大的延时问题，TD方法能够解决这种问题，可以通过在线、实时的方式进行增量更新。]")
     st.markdown("### :blue[10.4.3 Optimality of TD(0)]")
-    st.markdown("### :blue[10.4.4 SARSA: On-policy TD Control]")
-    st.markdown("&emsp;&emsp;时序差分算法的动作价值估计时，对于同轨策略，我们遵循当前策略$\pi$生成的数据（状态$s$和动作$a$）来估计$q_{\pi}(s,a)$")
+    st.markdown("### :blue[10.4.4 $Sarsa$: On-policy TD Control]")
+    st.markdown("&emsp;&emsp;时序差分算法的动作价值估计时，对于同轨策略，我们遵循当前策略$\pi$生成的数据（状态$s$和动作$a$）来估计$q_{\pi}(s,a)$。")
     st.image("src/RL-TD-SARSA1.png")
-    st.markdown("### :blue[10.4.5 Q-Learning: On-policy TD Control]")
-    st.markdown("### :blue[10.4.6 Expected SARSA]")
+    st.markdown("&emsp;&emsp;$Sarsa$的动作价值更新公式如下：")
+    st.latex(r'''Q\left(S_{t}, A_{t}\right) \leftarrow Q\left(S_{t}, A_{t}\right)+\alpha\left[R_{t+1}+\gamma Q\left(S_{t+1}, A_{t+1}\right)-Q\left(S_{t}, A_{t}\right)\right]''')
+    st.markdown("&emsp;&emsp;智能体根据当前状态选择一个动作，并与环境进行交互。然后，智能体观察到新的状态、奖励，并再次根据一种策略选择下一个动作。这个新的动作不仅基于新的状态，还和之前选择的动作相关。因此，SARSA算法是一个On-policy算法，因为它优化的策略与生成样本的策略一致。\
+        如果状态$S_{t+1}$是终止状态，那么$Q(S_{t+1},A_{t+1})$则定义为0。算法具体步骤如下：")
+    st.image("src/RL-TD-SARSA-alg.png")
+    st.markdown("&emsp;&emsp;在状态$S$执行动作$A$然后得到收益$R$转移到了状态$S'$，而$A'$实际上是一个并未实际执行的动作，因此也不会有新的收益。")
+    st.markdown("### :blue[10.4.5 Q-Learning: Off-policy TD Control]")
+    st.markdown("&emsp;&emsp;Q-Learning算法的动作价值更新方式如下所示：")
+    st.latex(r'''Q\left(S_{t}, A_{t}\right) \leftarrow Q\left(S_{t}, A_{t}\right)+\alpha\left[R_{t+1}+\gamma \max _{a} Q\left(S_{t+1}, a\right)-Q\left(S_{t}, A_{t}\right)\right]''')
+    st.markdown("&emsp;&emsp;上述公式中$\\argmax_a Q(S_{t+1},a)$表明是从所有的$Q(S_{t+1},a)$中选择一个最大的啦进行更新。在这里，待学习的动作价值函数$Q$采用了对最优动作价值函数$q*$的直接近似作为学习目标，\
+        与用于生成智能体决策序列轨迹的策略是无关的。（SARSA的学习目标中使用的是待学习的动作价值函数本身，它的计算需要知道下一时刻的$A_{t+1}$，因此与生成数据的行动策略是相关的）所以Q-Learning是离轨策略。算法具体步骤如下：")
+    st.image("src/RL-TD-QL-alg.png")
+    st.markdown("### :blue[10.4.6 Expected Sarsa]")
+    st.markdown("&emsp;&emsp;期望$Sarsa$算法的式更新式如下：")
+    st.latex(r'''\begin{aligned}
+Q\left(S_{t}, A_{t}\right) & \leftarrow Q\left(S_{t}, A_{t}\right)+\alpha[R_{t+1}+\gamma \mathbb{E}_{\pi}\left[Q\left(S_{t+1}, A_{t+1}\right) \mid S_{t+1}\right]-Q\left(S_{t}, A_{t}\right)] \\
+& \leftarrow Q\left(S_{t}, A_{t}\right)+\alpha[R_{t+1}+\gamma \sum_{a} \pi\left(a \mid S_{t+1}\right) Q\left(S_{t+1}, a\right)-Q\left(S_{t}, A_{t}\right)]
+\end{aligned}''')
+    st.markdown("&emsp;&emsp;期望$Sarsa$在计算式会稍稍复杂一点，但是消除了随机选择$A_{t+1}$而产生的方差，因此更加稳定。")
+    st.markdown("&emsp;&emsp;下图是悬崖边行走任务中，期望$Sarsa$、$Q-Learning$、$Sarsa$三种算的汇总效果：")
+    st.image("src/RL-TD-cliff-walk-compare.png")
     pass
 def reinforcement_ppo_family():
     st.title("PPO")
