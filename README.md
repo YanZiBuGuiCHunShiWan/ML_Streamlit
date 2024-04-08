@@ -1,6 +1,6 @@
 # 心理学与机器学习领域知识分享
 
-​		[点击访问](https://mlapp-yanzibuguichunshiwan.streamlit.app/Guassian_Distribution)
+​		[点击访问](https://mlapp-tianchi.streamlit.app/)
 
 ![homepage](./src/homepage.png)
 
