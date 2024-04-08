@@ -59,16 +59,87 @@ def Variational_inference():
     st.latex(r'''\begin{aligned}  \end{aligned}''')
 
     ############################################################7.1.3##########################################################
-    st.markdown("### :blue[7.1.3 一元高斯模型]")
+def UnivariateGuassion():
+    st.markdown("### :blue[7.2 单变量高斯分布]")
     st.markdown("&emsp;&emsp;接下来介绍如何使用$\\text{factorized variational approximation}$来近似一元高斯分布，我们的目的是:red[推断后验分布的均值$\mu$和精度$\\tau$]。\
         给定了观察数据$\mathcal D=\{ x_1,...,x_N \}$,假设观测数据是相互独立的，那么我们可以写出似然函数：")
-    st.latex(r'''\begin{aligned} p(\mathcal D|\mu,\tau)={(\frac{\tau}{2\pi})}^{\frac{N}{2}} \exp \left\{ -\frac{\tau}{2}\sum_{n=1}^{N}(x_n-\mu)^2  \right\}\end{aligned}''')
+    st.latex(r'''\begin{aligned} p(\mathcal D|\mu,\tau)={(\frac{\tau}{2\pi})}^{\frac{N}{2}} \exp \left\{ -\frac{\tau}{2}\sum_{n=1}^{N}(\mathbf {x_n}-\mu)^2  \right\}\end{aligned}''')
+    st.markdown("&emsp;&emsp;我们给出均值$\mu$和精度$\\tau$的先验，二者是耦合的，具体表达分别如下：")
+    st.latex(r'''\begin{aligned} p(\mu|\tau)&=\mathcal N(\mu|\mu_0 ,(\lambda_{0}\tau)^{-1})=p(\mu|\tau)=\frac{1}{2\pi}\sqrt{\lambda_{0}\tau}\exp\{-\frac{\lambda_{0}\tau}{2}(\mu-\mu_{0})^{2}\} \\
+        p(\tau)&=Gamma(\tau|a_0,b_0)=\frac{1}{\Gamma(a_{0})}b_{0}^{a_{0}}\tau^{a_{0}-1}\exp(-b_{0}\tau)\end{aligned}''')
 
+    st.markdown("&emsp;&emsp;接下来依据公式$7.3$对参数$\mu$和$\\tau$进行推导，我们令$q(\mu,\\tau)=q_{\mu}(\mu)q_{\\tau}(\\tau)$，先推导$q_{\mu}(\mu)$：")
+    st.latex(r'''\begin{aligned}
+\ln q_{\mu}^{*}(\mu)& =\mathbb{E}_{\tau}[\mathbb{ln}p(D,\mu,\tau)]+\mathrm{C}  \\
+&=\mathbb{E}_{\tau}[\ln\{p(D|\mu,\tau)p(\mu,\tau)\}]+\mathrm{C} \\
+&=\mathbb{E}_{\tau}[\ln\{p(D|\mu,\tau)p(\mu|\tau)p(\tau)\}]+\mathrm{C} \\
+&=\mathbb{E}_{\tau}[\ln p(D|\mu,\tau)]+\mathbb{E}_{\tau}[\ln p(\mu|\tau)]+\mathbb{E}_{\tau}[\ln p(\tau)]+\mathrm{C} \\
+&=\mathbb{E}_{\tau}[\mathbb{ln}p(D|\mu,\tau)]+\mathbb{E}_{\tau}[\mathbb{ln}p(\mu|\tau)]+\mathrm{C}
+\end{aligned}''')
+    st.markdown("&emsp;&emsp;:blue[注：上述推导中和$\mu$无关的被纳入常数项C了。]带入式子可进一步得出：")
+    st.latex(r'''\begin{aligned}
+\ln q_{\mu}^{*}(\mu)& =\mathbb{E}_{\tau}[\ln p(D|\mu,\tau)]+\mathbb{E}_{\tau}[\ln p(\mu|\tau)]+\mathrm{C}  \\
+&=\mathbb{E}_{\tau}[\underbrace{\frac{N}{2}\ln\frac{\tau}{2\pi}-\frac{\tau}{2}\sum_{n=1}^{N}(x_{n}-\mu)^{2}}_{\ln p(D|\mu,\tau)}]\\
+    &+\mathbb{E}_{\tau}[\underbrace{\ln\frac{1}{2\pi}+\ln\sqrt{\lambda_{0}\tau}-\frac{\lambda_{0}\tau}{2}(\mu-\mu_{0})^{2}}_{\ln p(\mu|\tau)}]+\mathrm{C} \\
+&=-\frac{\mathbb{E}[\tau]}2\sum_{n=1}^{N}(x_{n}-\mu)^{2}-\frac{\lambda_{0}\mathbb{E}[\tau]}2(\mu-\mu_{0})^{2}+\mathrm{C} \\
+&=-\frac{\mathbb{E}[\tau]}{2}(\lambda_{0}+N)\mu^{2}+\frac{\mathbb{E}[\tau]}{2}(2\lambda_{0}\mu_{0}+\sum_{n=1}^{N}2x_{n})\mu+\mathrm{C} \\
+&=-\frac{1}{2}(\lambda_{0}+N)\mathbb{E}[\tau]\mu^{2}+\mu(\lambda_{0}+N)\mathbb{E}[\tau]\frac{(\lambda_{0}\mu_{0}+N\bar{x})}{\lambda_{0}+N} +\mathrm{C}
+\end{aligned} \tag{7.13}''')
+    st.markdown("&emsp;&emsp;在多元高斯分布那一章节，我们知道高斯分布的指数项可以整理成：")
+    st.latex(r'''-\frac12(\mathbf x-\boldsymbol{\mu})^T\boldsymbol{\Sigma}^{-1}(\mathbf x-\boldsymbol{\mu})=-\frac12 \mathbf x^T\boldsymbol{\Sigma}^{-1}\boldsymbol{\mathbf x}+\mathbf x^T\boldsymbol{\Sigma}^{-1}\boldsymbol{\mu}+\mathrm{C}''')
+    st.markdown("&emsp;&emsp;和$7.13$最后一行比较以后不难得出：")
+    st.latex(r'''\begin{aligned} q_{\mu}(\mu)&\sim\mathcal{N}(\mu|\mu_{N},\lambda_{N}^{-1}) \\
+            \lambda_N&=(\mathbf \lambda_0+N)\mathbb{E}[\tau]\\
+                \mu_N&=\frac{\lambda_0\mu_0+N\bar{x}}{\mathbf \lambda_0+N}\end{aligned} \tag{7.14}''')
+    st.markdown("&emsp;&emsp;同理可推$q_{\\tau}^{*}(\\tau)$:")
+    st.latex(r'''\begin{aligned} \ln q_{\tau}^{*}(\tau)&=\mathbb{E}_{\mu}[\ln p(\tau)]+\mathbb{E}_{\mu}[\ln p(\mu|\tau)]+\mathbb{E}_{\mu}[\ln p(D|\mu,\tau)]+\mathrm{C} \\
+        &= \mathbb{E}_{\mu}[\underbrace{-\ln\Gamma(a_{0})+a_{0}\ln b_{0}+(a_{0}-1)\ln\tau-b_{0}\tau}_{\ln p(\tau)}]\\
+            &+\mathbb{E}_{\mu}[\underbrace{-\ln2\pi+\frac{1}{2}(\ln\lambda_{0}+\ln\tau)-\frac{\lambda_{0}\tau}{2}(\mu-\mu_{0})^{2}}_{\ln p(\mu|\tau)}]\\
+                    &+\mathbb{E}_{\mu}[\underbrace{-\frac N2\ln2\pi+\frac N2\ln\tau-\frac\tau2\sum_{n=1}^{N}(x_{n}-\mu)^{2}}_{\ln p(D|\mu,\tau)}] +\mathrm{C}\\
+                        &=(a_{0}-1)\ln\tau-b_{0}\tau \\
+                            &+\frac12\ln\tau-\frac\tau2\mathbb{E}_{\mu}[\lambda_{0}(\mu-\mu_{0})^{2}]\\
+                                &+\frac{N}{2}\ln\tau-\frac{\tau}{2}\mathbb{E}_{\mu}[\sum_{n=1}^{N}(x_{n}-\mu)^{2}]+\mathrm{C}\\
+                                    &=\{(a_0-1)+\frac{N+1}{2}\}\ln\tau\\
+                                        &-\{b_0+\frac{1}{2}\mathbb{E}_\mu[\lambda_0(\mu-\mu_0)^2+\sum_{n=1}^{N}(x_n-\mu)^2]\}\tau+\mathrm{C}\end{aligned} \tag{7.15}''')
+    st.markdown("&emsp;&emsp;又因为$Gamma$分布取对数以后可以写成形如$(a_0-1)\ln\\tau-b_0\\tau+\mathrm{C}$的形式，和上式最后两行进行对比，我们可以得出结论：")
+    st.latex(r'''\begin{aligned}&q_{\tau}(\tau) \sim Gamma(a_N,b_N) \\
+        &a_{N} =a_{0}+\frac{N+1}{2}  \\
+    &b_{N} =b_0+\frac{1}{2}\mathbb{E}_{\mu}[\lambda_0(\mu-\mu_0)^2+\sum_{n=1}^{N}(x_n-\mu)^2] 
+    \end{aligned} \tag{7.16}''')
+    st.markdown("&emsp;&emsp;我们看一下式子$7.14$和$7.16$。从前者可以得出想确定分布$q_{\mu}(\mu)$我们必须计算$\\mathbb{E}[\\tau]$($\\tau$的一阶矩)，从$7.16$中$b_N$的表达式从\
+        我们得计算$\mu$的一阶矩$\mathbb E[\\mu]$和二阶矩$\\mathbb E[\\mu^2]$。但是，并非所有的分布其N阶矩都存在。有些分布甚至连\
+一阶矩（期望）都不存在（积分发散或不可积）。因此一种可行的办法就是先给$\\tau$的一阶矩一个初始值，然后用这个初值计算出新的$q_{\mu}(\mu)$，然后反复迭代直到满足预先设定的收敛条件。")
+    st.markdown("&emsp;&emsp;在第一小节，我们介绍了变分推断是一个迭代式更新方法。但在特殊情况下，即通过为先验参数指定特殊的初始值，可以让迭代解变成解析解（只需要计算一次就可以得到最终的解）。\
+        达到这一效果的先验参数值是$\mu_0 = a_0 = b_0 = \lambda_0 = 0$。注意，这种取值下先验会变成不合理先验,但是后验分布仍然是一个标准的概率分布。接下来我们计算一下$Gamma$分布的均值，利用其分布性质$\\mathbb E[\\tau]=\\frac{a_N}{b_N}$：")
+    st.latex(r'''\begin{aligned} \frac{1}{\mathbb E[\tau]}&=\frac{\frac{1}{2}\sum_{n=1}^{N}(x_n-\mu)^2}{\frac{N+1}{2}}\\
+        &=\mathbb{E}_{\mu}[\frac{1}{N+1}\sum_{n=1}^{N}(x_{n}-\mu)^{2}] \\
+&=\mathbb{E}_{\mu}[\frac{1}{N+1}\sum_{n=1}^{N}(x_{n}^{2}-2x_{n}\mu+\mu^{2})] \\
+&=\mathbb{E}_{\mu}[\frac{N}{N+1}\bar{x^{2}}-\frac{2N}{N+1}\bar{x}\mu+\frac{N}{N+1}\mu^{2}] \\
+&=\frac{N}{N+1}(\bar{x^{2}}-2\bar{x}\mathbb{E}_{\mu}[\mu]+\mathrm{E}_{\mu}[\mu^{2}])\end{aligned} \tag{7.17}''')
+    st.markdown("&emsp;&emsp;利用式$7.14$：")
+    st.latex(r'''\begin{aligned} \mathbb E_{\mu}[\mu]&=\bar{x} \\
+        \mathbb E_{\mu}[\mu^2]&=\mathbb var_{\mu}[\mu]+\mathbb E_{\mu}[\mu]^2 \\
+            &= \frac{1}{N {\mathbb E[\tau]}}+\bar{x}^2\end{aligned} \tag{7.18}''')
+    st.markdown("&emsp;&emsp;将式$7.18$带入回$7.17$，有：")
+    st.latex(r'''\begin{aligned}
+\frac{1}{\mathbb{E}[\tau]}& =\frac{N}{N+1}(\bar{x^{2}}+\frac{1}{N \mathbb E[\tau]}-\bar{x}^2),令\frac{1}{\mathbb E[\tau]}=t \\
+t& =\frac{N}{N+1}(\bar{x^{2}}-\bar{x}^2)+\frac{t}{N+1}  \\
+\frac{Nt}{N+1}& =\frac{N}{N+1}(\bar{x^2}-\bar{x}^2)  \\
+t& =(\bar{x^{2}}-\bar{x}^{2})  \\
+t& =\frac{1}{N}\sum_{n=1}^{N}(x_{n}-\bar{x})^{2} 
+\end{aligned}''')
+    st.markdown("&emsp;&emsp;方差的均值为精度均值的倒数，为$\\frac{1}{N}\sum_{n=1}^{N}(x_{n}-\\bar{x})^{2}$，是整体的有偏估计。")
+    
+    
+    
+    
+    
+    
 def Variational_Mixture_of_Gaussians():
     st.markdown("## :blue[7.2 变分混合高斯分布]")
-    st.markdown("&emsp;&emsp;我们现在将目光聚集到如何使用变分贝叶斯来求解混合高斯模型。在混合高斯模型中，对于每一个观察变量$\\mathbf x_n$我们有一个相应的one of k编码的隐变量$\mathbf z_n$，即$\mathbf z_n$\
-        由$z_{nk},k=1,2,...,K$构成，且$z_{nk} \in \{0,1\}$，其控制样本$\mathbf x_i$是属于哪一个高斯分量的。观测数据集我们记作$\mathbf X=\{\mathbf{x_1,x_2,....,x_N} \}$，隐变量记作$\mathbf Z=\{ \mathbf{z_1,z_2,...,z_N}\}$，此外我们还有一组混合系数$\pi$，其对应于高斯分量的权重。\
-            我们可以很容易地写出给定$\pi$的条件下$\mathbf Z$的分布：")
+    # st.markdown("&emsp;&emsp;我们现在将目光聚集到如何使用变分贝叶斯来求解混合高斯模型。在混合高斯模型中，对于每一个观察变量$\x_n$我们有一个相应的one of k编码的隐变量$\mathbf z_n$，即$\mathbf z_n$\
+    #     由$z_{nk},k=1,2,...,K$构成，且$z_{nk} \in \{0,1\}$，其控制样本$x_i$是属于哪一个高斯分量的。观测数据集我们记作$\mathbf X=\{\mathbf{x_1,x_2,....,x_N}}$，隐变量记作$\mathbf Z=\{ \mathbf{z_1,z_2,...,z_N}\}$，此外我们还有一组混合系数$\pi$，其对应于高斯分量的权重。\
+    #         我们可以很容易地写出给定$\pi$的条件下的分布：")
     st.latex(r'''\begin{aligned} p(\mathbf Z|\pi)=\prod_{n=1}^N\prod_{k=1}^{K}\pi_{k}^{z_{nk}} \end{aligned}''')
     
     
@@ -79,7 +150,7 @@ def Variational_Mixture_of_Gaussians():
     st.markdown("&emsp;&emsp;为了更好地用变分法建模，接下来我们写出数据的完全分布：")
     st.latex(r'''p(\mathbf {X,Z,\pi,\mu,\Lambda})=p(\mathbf {X|Z,\mu,\Lambda})p(\mathbf{Z|\pi})p(\pi)p(\mathbf{\mu|\Lambda})p(\mathbf {\Lambda})''')
     st.markdown("&emsp;&emsp;相似地，在知道$\mathbf {Z,\mu,\Lambda}$的情况下我们可以写出观察数据的条件分布。")
-    st.latex(r'''p(\mathbf {X|Z,\mu,\Lambda})=\prod_{n=1}^{N}\prod_{k=1}^{K}\mathcal N(\mathbf x_n|\mu_k,\mathbf \Lambda_k^{-1})^{z_{nk}}''')
+    st.latex(r'''p(\mathbf {X|Z,\mu,\Lambda})=\prod_{n=1}^{N}\prod_{k=1}^{K}\mathcal N(x_n|\mu_k,\mathbf \Lambda_k^{-1})^{z_{nk}}''')
     st.markdown("&emsp;&emsp;我们考虑一个可因式分解的变分分布。")
     st.latex(r'''q(\mathbf {Z,\pi,\mu,\Lambda})=q(\mathbf Z)q(\mathbf {\mu,\pi,\Lambda})''')
     st.markdown("&emsp;&emsp;关于$q(\mathbf Z)$和$q(\mathbf {\mu,\pi,\Lambda})$的分布形式我们并不需要预先假设服从某个特殊的分布，通过优化变分分布我们最终可以算出变量所属的分布。我们先考虑$q(\mathbf Z)$的推导，由式子$7.3$我们可以写出：")
@@ -95,7 +166,8 @@ def Variational_Mixture_of_Gaussians():
 
 pages={
     "1.变分推断基础": Variational_inference,
-    "2.变分混合高斯分布": Variational_Mixture_of_Gaussians
+    "2.单变量高斯分布推导": UnivariateGuassion,
+    "3.变分混合高斯分布": Variational_Mixture_of_Gaussians
 }
 # 添加侧边栏菜单
 selection = st.sidebar.radio("学习列表", list(pages.keys()))
