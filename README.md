@@ -15,7 +15,11 @@
 - Approximation Inference（正在更新）
 - Sampling Methods
 - Natural Language Processing
-- Reinforcement learning（正在更新）
+- Cognitive Behavioral Therapy
+- Prompt Engineering
+- DataSets
+- Model Eval
+- Model Quantization
 - Daily Notes
 
 # 运行
