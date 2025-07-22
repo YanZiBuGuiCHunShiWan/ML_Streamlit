@@ -4,7 +4,7 @@ st.markdown('# Learning to Rank')
 st.markdown('​在信息检索和推荐系统领域，排序问题始终是核心任务之一。从搜索引擎返回的网页列表，到电商平台为用户推荐的商品，排序算法无处不在。为了更智能、更个性化地进行排序，**Learning to Rank（学习排序）** 应运而生。Learning to Rank 的起源可以追溯到 2000 年代初期，随着机器学习在自然语言处理和信息检索中的广泛应用，人们逐渐意识到传统的基于规则或启发式的排序方法难以应对复杂的用户需求。2005 年，微软亚洲研究院发表了著名的 $\\text{RankNet}$（基于神经网络的排序学习模型），随后又推出 $\\text{LambdaRank }$和 $\\text{LambdaMART}$，这些工作开启了用监督学习方法直接优化排序的新时代。排序方法整体可分为Point-Wise,Pair-Wise,List-Wise三种，本文接下来讲按照顺序介绍文档排序场景下这三种方法的思想与具体细节。')
 st.markdown('# 1.Point-Wise')
 st.markdown('​Point-Wise Ranking 是学习排序的一类方法，它把排序任务视为 **回归或分类问题**。因此通常采样$\\text{BCE Loss}$或者$\\text{Focal Loss}$作为策略，以文档排序的场景为例，我们用BERT作为Cross Encoder捕获查询和文档间细粒度的语义交互，给定一个查询$query_i$、相关的文档$doc_i^+$（这里笔者假定只有一个相关文档，实际上可以有多个）和对应的$m$个候选文档$doc_{ij}^-,j=1,\ldots,m$，将$query_i$和对应的文档通过特殊符号$\\text{[CLS][SEP]}$拼接后作为BERT的输入，由可训练的线性层$\mathbf W$映射后再经过$\operatorname{sigmoid}$函数得到对应的分数$s_i$，对于正样本的得分$s_i$，应该越接近$1$越好，对于负样本得分$s_j$，应该越接近$0$越好。如下图：')
-st.image('assets/image-20250701180409168.png')
+st.image('assets/learning2rank/pointwise.png')
 st.markdown('​Point-Wise 把排序问题当作 **独立的回归或分类任务** 来做，预测每个样本的分值或概率。但排序真正关心的是 **文档之间的相对顺序**（比如NDCG、MAP、MRR 等），Point-Wise 并没有直接针对这些指标优化，因此即便模型预测的分值接近真实分值，也可能导致最终的排序顺序完全错误。此外，Point-Wise损失函数通常不能反映“局部排序错误”的严重程度，如把排名第$1$的文档得分预测稍低一些，导致其拍到了后几位，损失函数依然非常小，但是上线后用户体验和位置有关的衡量指标都很差。如果训练集中有大量负样本，模型可能只学会输出低分来降低损失，即便是类别加权的损失也难以将模型改进到正常水平。')
 st.markdown('# 2.Pair-Wise')
 st.markdown('## 2.1 RankNet& lambda Rank')
@@ -18,7 +18,7 @@ st.latex(r'''\begin{aligned}C=\frac{1}{2}\sigma\left(s_{i}-s_{j}\right)+\log \le
 st.markdown('​当$S_{ij}=-1$时有：')
 st.latex(r'''\begin{align}C&=\sigma\left(s_{i}-s_{j}\right)+\log \left(1+e^{-\sigma\left(s_{i}-s_{j}\right)}\right)\\&=\log \left(e^{\sigma\left(s_{i}-s_{j}\right)})\right)+\log \left(1+e^{-\sigma\left(s_{i}-s_{j}\right)}\right)\\&=\log \left(1+e^{\sigma\left(s_{i}-s_{j}\right)})\right)\end{align}''')
 st.markdown('​$\sigma=1$时的损失函数图像如下（自变量为$s_i-s_j$）：')
-st.image('assets/image-20250702163213780.png')
+st.image('assets/learning2rank/RankNet.png')
 st.markdown('​假设$s_i=\mathbf x_i^{\\top}\mathbf w,s_j=\mathbf x_i^{\\top}\mathbf w$，$\mathbf w\in \mathbf R^{h\\times 1}$我们可以看一参数更新公式，以$w_k$（$\mathbf w$的第$k$个分量）为例：')
 st.latex(r'''\begin{aligned} \frac{\partial C(s_i,s_j)}{\partial w_k}&= \frac{\partial C}{\partial s_i}\frac{\partial s_i}{\partial w_k}+\frac{\partial C}{\partial s_j}\frac{\partial s_j}{\partial w_k}\\&=\bigg(\frac{1}{2}\left(1-S_{i j}\right) \sigma+\frac{-\sigma e^{-\sigma(s_{i}-s_{j})}}{1+e^{-\sigma\left(s_{i}-s_{j}\right)}}\bigg)\frac{\partial s_i}{\partial w_k}+\bigg(-\frac{1}{2}\left(1-S_{i j}\right)\sigma +\frac{\sigma e^{-\sigma(s_{i}-s_{j})}}{1+e^{-\sigma\left(s_{i}-s_{j}\right)}}\bigg)\frac{\partial s_j}{\partial w_k}\\&=\sigma\bigg(\frac{1}{2}\left(1-S_{i j}\right) -\frac{e^{-\sigma(s_{i}-s_{j})}}{1+e^{-\sigma\left(s_{i}-s_{j}\right)}}\bigg)(\frac{\partial s_i}{\partial w_k}-\frac{\partial s_j}{\partial w_k})\\&=\sigma\bigg(\frac{1}{2}\left(1-S_{i j}\right) -\frac{1}{1+e^{\sigma\left(s_{i}-s_{j}\right)}}\bigg)(\frac{\partial s_i}{\partial w_k}-\frac{\partial s_j}{\partial w_k})\end{aligned}''')
 st.markdown('​且我们可以发现：')
@@ -30,12 +30,12 @@ st.latex(r'''\delta C\approx\sum_{k}\frac{\partial C}{\partial w_{k}}\delta w_{k
 st.markdown('​即梯度下降一定沿着损失函数减小的方向更新。每次更新都会让损失值降低。然而，初版的$\mathrm{RankNet}$训练效率低下——每次处理一对文档就要更新一次模型，如一个查询有$100$个候选文档，那么两两配对比较就需要$\\begin{pmatrix} 100 \\ 2\\end{pmatrix}$个文档对，这样的计算开销过大。我们回顾上述公式$xxxx$，可以将左边一部分复杂的公式定义：')
 
 st.latex(r'''\lambda_{ij}\equiv\sigma\bigg(\frac{1}{2}\left(1-S_{i j}\right) -\frac{1}{1+e^{\sigma\left(s_{i}-s_{j}\right)}}\bigg)''')
-st.markdown('''> :blue[[!NOTE]]
+st.info('''
 $\lambda_{ij}$代表$i$的关系一定比$j$在前，所以有$S_{ij}=1$，故：
 >
 >
->
-> $$\\begin{aligned}\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad\lambda_{ij}&=-\\frac{\sigma}{1+e^{\sigma\\left(s_{i}-s_{j}\\right)}}\\\\ \lambda_{ji}&=-\\frac{\sigma}{1+e^{\sigma\\left(s_{j}-s_{i}\\right)}}\\\\ &=-\\frac{\sigma e^{\sigma\\left(s_{i}-s_{j}\\right)}}{1+e^{\sigma\\left(s_{i}-s_{j}\\right)}}\\\\&=-\sigma(1-\lambda_{ij})\\end{aligned}$$''')
+> $$\\begin{aligned}\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad\lambda_{ij}&=-\\frac{\sigma}{1+e^{\sigma\\left(s_{i}-s_{j}\\right)}}\\\\ \lambda_{ji}&=-\\frac{\sigma}{1+e^{\sigma\\left(s_{j}-s_{i}\\right)}}\\\\ &=-\\frac{\sigma e^{\sigma\\left(s_{i}-s_{j}\\right)}}{1+e^{\sigma\\left(s_{i}-s_{j}\\right)}}\\\\&=-\sigma(1-\lambda_{ij})\\end{aligned}$$''',
+icon='ℹ️')
 st.markdown('​这样损失函数对单个参数分量的梯度公式就变得清爽了：')
 st.latex(r'''\begin{aligned} \frac{\partial C(s_i,s_j)}{\partial w_k}&= \lambda_{ij}(\frac{\partial s_i}{\partial w_k}-\frac{\partial s_j}{\partial w_k})\end{aligned}''')
 st.markdown('​我们可以把$\lambda_{ij}$想象成一个作用力，如果模型把本该靠前的文档$doc_i$排在了$doc_j$后面，那么$\lambda_{ij}$就会产生一个力，将$s_i$和$s_j$推开。那么这个作用力是否可以叠加与抵消呢？如果我们找到所有的$\lambda_{ij}$预先计算好这些作用力，那么就可以实现从“逐渐更新”到“批量累计更新”。考虑一个查询下所有的文档对，看看每个权重受到了 多大的推力，并将$w_k$的梯度贡献加起来，有：')
@@ -43,9 +43,12 @@ st.latex(r'''\delta w_k=-\eta\sum_{\{i,j\}\in I}\lambda_{ij}(\frac{\partial s_i}
 st.markdown('​现在，这个公式可以写成更加统一的形式：')
 st.latex(r'''\begin{aligned}\delta w_k&=-\eta \sum_i\lambda_i(\frac{\partial s_i}{\partial w_k})\\\lambda_i&=\sum_{j:\{i,j\}\in I}\lambda_{ij}-\sum_{j:\{j,i\}\in I}\lambda_{ji}\end{aligned}''')
 st.markdown('​意思是对于某个文档$doc_i$，先找到相关性不如它的那些文档$doc_j$，此时可以算出一个向上的叠加的推力即$\\begin{aligned}\sum_{j:\{i,j\}\in I}\lambda_{ij}\\end{aligned}$，同时也会有其他相关性比$doc_i$高的文档，此时$doc_i$上会有一个向下的叠加的拉力即$\\begin{aligned}-\sum_{j:\{j,i\}\in I}\lambda_{ji}\\end{aligned}$。更直观一点，给定$5$个文档，假定关系如下：')
-st.image('assets/image-20250703105259182.png')
+st.image('assets/learning2rank/doc-preference.png')
 st.markdown('​那么针对每一个文档$doc_i$，需要计算的$\lambda_{ij}$、$\lambda_{ji}$与$\\frac{\partial s_i}{\partial w_k}$如下表：')
-df = pd.DataFrame({
+
+@st.cache_data
+def get_lambda_table():
+    df = pd.DataFrame({
     "文档": ["$doc_1$", "$doc_2$", "$doc_3$", "$doc_4$", "$doc_5$"],
     "$\\lambda_{ij}$": [
         "$\\lambda_{12},\\lambda_{13},\\lambda_{14}$",
@@ -69,7 +72,8 @@ df = pd.DataFrame({
         "$\\frac{\\partial s_5}{\\partial w_k}$"
     ]
 })
-st.table(df)
+    return df
+st.table(get_lambda_table())
 st.markdown('​因此，对于一个查询所有的文档，算出他们两两之间的$\lambda_{ij}$，根据公式算出累加梯度$\lambda_i$，所有$\lambda_i$计算完后再根据公式进行梯度更新，显著加速训练速度。即原始的训练方式是遍历所有的文档对$\\begin{pmatrix} 100 \\ 2\\end{pmatrix}$算$O(n^2)$次计算（计算开销小），每次遍历就执行一次梯度更新（计算开销大），有$n^2$次廉价计算加$n^2$次昂贵计算。而改进后有先遍历所有文档对算出$\lambda_i$即$O(n^2)$次计算（计算开销小），再执行$n$次梯度更新，为$n$次昂贵计算，因此将计算复杂度降低至了线性，显著降低计算开销，而这个为加速而生的$\lambda$梯度，启发了研究者们：我们是不是可以绕开复杂的损失函数，直接去定义和优化梯度呢？')
 st.markdown('​答案是——可以的，那为什么要直接定义梯度？因为$\mathrm{RankNet}$的优化目标只是成对损失函数，而衡量排序好坏的指标如$\operatorname{NDCG},\operatorname {MRR}$并不是简单的成对损失，因此优化成对损失并不能保证训练后的模型在这些衡量指标上的效果就一定更好。那能否直接优化这些指标呢？——答案是可以，不过很麻烦，因为这些指标的计算涉及到排序算子，排序是一个不可导的操作，没法计算损失函数的梯度并反向传播，需要找到一些可导近似函数进行优化。因此$\mathrm{LambdaRank}$提出不显示定义损失函数而是直接定义梯度来训练神经网络，$\mathrm{LambdaRank}$在$\mathrm{RankNet}$的基础上对$\lambda_{ij}$进行了改造，直接定义梯度为：')
 st.latex(r'''\lambda_{i j}=\frac{\partial C(s_i-s_j)}{\partial s_i}=-\frac{\sigma}{1+e^{\sigma\left(s_{i}-s_{j}\right)}} \cdot|\Delta \mathrm{NDCG}|''')
@@ -102,22 +106,25 @@ df_approx = pd.DataFrame({
 st.table(df_approx)
 st.markdown('​以表格中的$\max$不可导算子为例，$\operatorname{max}$ 算子的作用是从一个向量中获得最大值，如$\mathbf v=(2,3,4,1,4,5)^{\\top}$的最大值是$5$，则$\max \mathbf v=5$，其近似如下：')
 st.latex(r'''\max(x_1,x_2,...,x_n)\approx\lim_{\tau\rightarrow \infin}\frac{1}{\tau}\log\sum_{i=1}^{n}\exp(\tau x_i)''')
-st.markdown('​$\tau$越大则近似越好，当$\tau$取$1$时则$\max$算子的近似就是$\operatorname{log sum exp}$。$\operatorname{sort}$算子和采样算子本文将会在接下来的章节详细介绍。')
+st.markdown('​$\\tau$越大则近似越好，当$\\tau$取$1$时则$\max$算子的近似就是$\operatorname{log sum exp}$。$\operatorname{sort}$算子和采样算子本文将会在接下来的章节详细介绍。')
 st.markdown('## 3.2 SoftRank')
 st.markdown('​$\\text{SoftRank}$[[3]](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/SoftRankWsdm08Submitted.pdf)的思想是过文档的得分和排名进行概率建模，实现了对$\\text{NDCG}$等指标的可微近似，从而使得梯度下降等优化方法得以应用。$\\text{NDCG}$指标计算依赖于$\\text{DCG}$和$\\text{IDCG}$，但是$\\text{DCG}$这个指标中涉及到了$\mathrm {sort}$的操作是不可导算子，因此训练时没法直接反向传播，如果将$\\text{DCG}$和$\\text{IDCG}$有一个平滑点的可导函数近似，那$\\text{NDCG}$自然也就可导了。给定神经网络预测的分数向量$\mathbf s$，相关性标签$\mathbf r$，$\\text{NDCG}@k(\mathbf s,\mathbf r)$计算方式如下：')
 st.latex(r'''\begin{aligned} \text{NDCG@}k(\mathbf s,\mathbf r)&=\frac{\text{DCG@}k(\mathbf s,\mathbf r)}{\text{IDCG@}k(\mathbf r)}\\\text{DCG@}k(\mathbf s,\mathbf r)&=\sum_{j=1}^{k}g(r_{\pi^{-1}(j)})D(j)\\\text{IDCG@}k(\mathbf r)&=\sum_{j=1}^{k}g(r_{\pi_\mathbf r^{-1}(j)})D(j)=\max \text{DCG@}k(\mathbf s,\mathbf r) \end{aligned}''')
 st.markdown('​其中$g(\cdot)$是增益因子，$g(z)=2^z-1$，$D(j)=1/\log(j+1)$是位置折扣因子。$\pi^{-1}(j)$是指排序$\pi$中第$j$个位置对应的原来文档的索引，$\pi$是神经网络预测的分数向量$\mathbf s$对应的排序后的列表，$\pi_{\mathbf r^{-1}(j)}$是指相关性分数列表$\mathbf r$从大到小排序得到排序$\pi_{\mathbf r}$中第$j$个位置对应的原来文档的索引。$\\text{IDCG@}k(\mathbf r)$就是最大化$\\text{DCG@k}$，可以看到其和模型预测的分数是无关的，因此给定相关性标签$\mathbf r$，$\\text{IDCG@}k(\mathbf r)$可以被预先计算出。')
 st.markdown('​举例：假设当前有$5$个文档，对应的相关性标签$\mathbf r=[0,1,2,0,3]$，神经网络预测的分数$\mathbf s=[0.02,0.01,0.41,0.22,0.31]$，那么先计算$\\text{DCG@k}$再计算$\\text{IDCG@k}$。依据神经网络预测得分排序得到$[0.41,0.31,0.22,0.02,0.01]$，对应的$\pi^{-1}=[3,5,4,1,2]$（假定索引从$1$开始），则对应的增益为：')
 
-df_ranking = pd.DataFrame({
+@st.cache_data
+def get_gain_table():
+    df_ranking = pd.DataFrame({
     "排序后文档顺序": ["文档3", "文档5", "文档4", "文档1", "文档2"],
     "标签分数": [2, 3, 0, 0, 1],
     "增益": [3, 7, 0, 0, 1],
     "位置折扣因子": ["$\\log_{2}2=1$", "$\\log_{2}3$", "$\\log_{2}4$", "$\\log_{2}5$", "$\\log_{2}6$"],
     "原来的索引$\\pi^{-1}(j)$": [3, 5, 4, 1, 2]
-})
+    })
+    return df_ranking
 
-st.table(df_ranking)
+st.table(get_gain_table())
 st.markdown('​因此$\\text{DCG@}5(\mathbf s,\mathbf r)=\\frac{3}{1}+\\frac{7}{\log_23}+\\frac{0}{\log_24}+\\frac{0}{\log_25}+\\frac{1}{\log_26}$。$\\text{IDCG@}k(\mathbf r)=\\frac{7}{1}+\\frac{3}{\log_23}+\\frac{1}{\log_24}+0+0$。$\\text{SoftRank}$将$\\text{DCG@k}$用概率近似得到$$\\text{SoftDCG@k}$$。具体地，假设当前查询$query$有$k$个候选文档集合$\set{doc_j}_{j=1}^{k}$。将$query$与$doc_j$拼接后得到的文本对$\mathbf x_j$送入一个$\mathrm{Encoder}$，得到神经网络输出的$k$个分数$f(\mathbf \\theta,\mathbf x_j),j=1,..,k$，$\\text{SoftRank}$假设当前文本对$\mathbf x_j$的输出分数$s_j$不再是确定的，而是服从于高斯分布：')
 st.latex(r'''\begin{aligned} s_j \sim \mathcal N(s_j|f(\mathbf \theta,\mathbf x_j),\sigma_s^2)\end{aligned}''')
 st.markdown('​如果给定两个文档$doc_i$与$doc_j$，从各自的高斯分布中采样得到的分数为$S_i,S_j$,我们想判断谁和$query$更加相似，那么就可以判断$S_i$与$S_i$谁大，但是由于分数是一个随机变量，因此我们看的是一个概率$P(S_i>S_j)$，即$\mathrm{Pr}(S_i-S_j)>0$，而服从高斯分布的随机变量之差仍然是高斯分布，我们定义文档$i$打败文档$j$的概率$\pi_{ij}$：')
@@ -163,23 +170,29 @@ st.markdown('​其中$\mathbf s_{\pi(j)}$是排序$\pi$中位置$j$的得分，
 st.latex(r'''\begin{aligned}P_{\mathbf s}(\pi)=\frac{\Phi(s_2)}{\Phi(s_2)+\Phi(s_3)+\Phi(s_1)}\frac{\Phi(s_3)}{\Phi(s_3)+\Phi(s_1)}\frac{\Phi(s_1)}{\Phi(s_1)}\end{aligned}''')
 st.markdown('​上述公式只是一个定义式，因为客观世界里排列实际出现的概率和分数列表没有关系，如假设有三个水果分别是“桃子、梨子、苹果”，实际的排列情况有$6$种可能性，每一个排列是等概率的。但是假设将这个水果的排列交给一个人来排列，则有可能人会根据自己的喜好将偏爱的水果放在前面，如果让一个人来排列多次这三个水果，很有可能是喜好的水果在前的次数较多，而排列概率模拟了人类排列物品的过程，但人为定义的排列概率是否满足概率分布的要求我们还需要证明，文中给出了引理$2$：')
 
-st.markdown('''> **Lemma 2** *The permutation probabilities $P_{\mathbf s}(\pi)$, $\pi \in \Omega_n$form a probability distribution over the set of permuta*tions, i.e., for each* $\pi \in \Omega_n$， we have $P_{\mathbf s}(\pi)$, and$\sum_{\pi \in \Omega_n}P_{\mathbf s}(\pi)=1$.''')
+st.info('''> **Lemma 2** *The permutation probabilities $P_{\mathbf s}(\pi)$, $\pi \in \Omega_n$form a probability distribution over the set of permuta*tions, i.e., for each* $\pi \in \Omega_n$， we have $P_{\mathbf s}(\pi)$, and$\sum_{\pi \in \Omega_n}P_{\mathbf s}(\pi)=1$.''',icon='ℹ️')
 
 st.markdown('​给定两个长度皆为$n$分数列表$\mathbf s_1,\mathbf s_2$，则我们可以计算得到两个排列分布向量$\\begin{pmatrix}\pi_{\mathbf s_1}^1\cdots\pi_{\mathbf s_1}^{n!}\\end{pmatrix}^\\top$与$\\begin{pmatrix}\pi_{\mathbf s_2}^1\cdots\pi_{\mathbf s_2}^{n!}\\end{pmatrix}^\\top$。我们可以用一个度量概率分布差异的指标作为损失函数。在实际计算中，由于排列$n$个物品有$n!$种可能性，计算过于复杂，因此我们只考虑物品$j$被排在第一个位置的概率——Top1 Probability。ListNet定义物品$j$被排序在第一个位置的概率公式：')
 st.latex(r'''\begin{aligned}P_{\mathbf s}(j)=\sum_{\pi(1)=j,\pi\in\Omega_n}P_{\mathbf s}(\pi)\end{aligned}''')
 st.markdown('​我们希望分数越大的物品被排在第一个位置的概率越高，只要计算每一个物品被排在第一个位置的概率$P_{\mathbf s}(k),k=1,...,n$。但即便如此，根据公式计算概率也几乎不可能，因为直剩下的$n-1$个物品排序仍然有$n-1!$种可能性，文中的定理$6$则明确告诉我们可以通过如下式子计算$P_{\mathbf s}(j)$：')
-st.latex(r'''P_{\mathbf s}(j)=\frac{\Phi(\mathbf s_j)}{\sum_{k=1}^n\Phi(\mathbf s_k)}''')
+st.latex(r'''P_{\mathbf s}(j)=\frac{\Phi( s_j)}{\sum_{k=1}^n\Phi(s_k)}''')
 st.markdown('​此外，我们仍需确保$P_{\mathbf s}(j)$也是符合概率分布的，文中引理7：')
+st.info('''> Top one probabilities  $P_{\mathbf s}(j)$ forms a probability distribution over the set of n objects.''',icon='ℹ️')
 st.markdown('​通过Top1概率，给定一个真实标签的概率分布$\mathbf P_{\mathbf r}^{(i)}$和模型输出的概率分布$\mathbf P_{\mathbf s}^{(i)}$，我们就可以用一个度量分布的指标作为损失函数，这里笔者沿用论文中的符号，查询$q^{(i)}$对应的候选文档集合为$\mathbf d^{(i)}=\set{d^{(i)}_{1},...,d_{n^{(i)}}^{(i)}}$，查询$q^{(i)}$对应文档集合的人工标记相关性分数向量记作$\mathbf r^{(i)}=(r^{(i)}_{1},...,r^{(i)}_{n^{(i)}})$，模型预测的输出为$\mathbf s^{(i)}=(s^{(i)}_{1},...,s^{(i)}_{n^{(i)}})$，我们看一下ListNet模型的损失函数：')
-st.image('assets/image-20250709153714737.png')
+st.image('assets/learning2rank/ListNet.png')
 st.markdown('​假设在标注阶段的每一个文档的相关性分数都是确切的，查询$q^{(i)}$标签的概率分布记作$\mathbf P_{\mathbf r}^{(i)}=(P_{r^{(i)}}(1),...,P_{r^{(i)}}(n))^{\\top}$，模型输出的概率分布记作$\mathbf P_{\mathbf s}^{(i)}=(P_{s^{(i)}}(1),...,P_{s^{(i)}}(n))^{\\top}$，前者是目标分布，后者是真实分布，我们可以找一个度量分布的函数作为损失函数，KL散度。若采用KL散度作为损失，则$\operatorname{D}_{KL}(\mathbf P_{\mathbf r}^{(i)}||\mathbf P_{\mathbf s}^{(i)})$表达如下：')
 st.latex(r'''\begin{aligned}\operatorname{D}_{KL}(\mathbf P_{\mathbf r}^{(i)}||\mathbf P_{\mathbf s}^{(i)})&=\sum_{k=1}^{n^{(i)}} P_{r^{(i)}}\log \frac{P_{r^{(i)}}}{P_{s^{(i)}}}\\&=C-\sum_{k=1}^{n^{(i)}} P_{r^{(i)}}\log {P_{s^{(i)}}}\\&=C+H(\mathbf P_{\mathbf r}^{(i)},\mathbf P_{\mathbf s}^{(i)})\end{aligned}''')
 st.markdown('​由于标签是固定的，即$C$一直不变，采用KL散度作为损失函数等价于用交叉熵作为损失函数。所以$\\text{ListNet}$的损失函数就是Cross Entropy Loss，即：')
 st.latex(r'''\begin{aligned} \mathcal L_{\mathrm{ListNet}}(f;\mathbf x;\mathbf r)&=-\sum_{k=1}^{K}P_{r_k}\log\sum_{k=1}^{K}\frac{\exp(s_k)}{\sum_{j=k}^{K}\exp(s_j)}\\&=-\sum_{k=1}^{K}\frac{r_k}{\sum_{j=1}^{K}r_j}\log\bigg(\sum_{k=1}^{K}\frac{\exp(s_k)}{\sum_{j=1}^{K}\exp(s_j)}\bigg)\end{aligned}''')
 st.markdown('​$\\text{ListMLE}$[[8]](https://www.researchgate.net/publication/221345286_Listwise_approach_to_learning_to_rank_-_Theory_and_algorithm)则采用了一个更加直接的方式，以真实的标签顺序排列作为目标，基于极大似然估计的思想设计损失函数，即让某个序列出现的概率最大，给定模型预测的分数向量$\mathbf s$，相关性标签$\mathbf r$，$\pi$是相关性标签从大到小排序，$\mathbf s_{\pi}$是模型预测分数按照相$\pi$进行排序后的向量，那么损失函数可以写作：')
 st.latex(r'''\mathcal L_{\text{ListMLE}}(f;\mathbf x;\mathbf r)=-\mathbb \log\prod_{k=1}^{K}\frac{\exp{s_{\pi(k)}}}{\sum_{j=k}^{K}\exp(s_{\pi(k)})}\tag{3-x}''')
+st.markdown('假设有一个文档$\set{1,2,3,4}$,模型预测的分数列表$\mathbf s=\set{4,2,3,1}$，且根据相关性标签$\mathbf r$得到的真实排序$\pi=\langle1,3,2,4 \\rangle$，直接优化该排列序列出现的概率，利用公式$(3−x)$：')
 st.latex(r'''-\log P(\hat {\mathbf s})=-\log \frac{\exp (4)}{\exp (4)+\exp (2)+\exp (3)+\exp (1)}\frac{\exp (3)}{\exp (3)+\exp (2)+\exp (1)}\frac{\exp (2)}{\exp (2)+\exp (1)}''')
 st.markdown('​然而，$\\text{ListNet}$与$\\text{ListMLE}$这类排序模型的优化目标与位置无关，用IR的衡量指标如$\\text{NDCG}$来衡量排序好坏时有不一致的矛盾，因此有学者通过引入位置因子解决这个问题，如$\\text{P-ListMLE}$[[9]](https://dl.acm.org/doi/10.5555/3020751.3020798)。')
+
+
+
+
 st.markdown('## 3.5 Neural Sort&Neural NDCG')
 st.markdown('​在上述的ListWise形式的排序中，由于$NDCG$指标的计算关于神经网络的输出是一个不可导的操作，因此不可直接优化，可以通过函数近似替代的方式或者与位置无关的损失函数来优化网络，那有没有研究是找到一个离散的排序的可导近似呢？——NeuralSort[[10]](https://arxiv.org/abs/1903.08850)就是一种“连续松弛”，是排序操作的可导近似。')
 st.markdown('​Neural Sort的目标是通过反向传播的方式优化包含$\operatorname{sort}$算子的优化目标，即如下形式：')
@@ -203,30 +216,30 @@ st.markdown('''
 
 st.markdown('​给定任意$\mathbf s$我们需要先找其和到$P_{\operatorname{sort}(s)}$明确的数学表达关系，我们知道的是$P_{\operatorname{sort}(s)}[i,j]=1$一定代表排序后第$i$大的元素对应于原始索$j$，第$1$大可以用$\max$，最小可以用$\min$，但是第$i$大这个该如何通过数学公式描述？我们需要借用这样一个引理：')
 
-st.markdown('''> For an input vector $\mathbf s = [s_1, s_2, \cdots,s_n] ^{\\top}$ that is sorted as $s[1] ≥ s[2] ≥\cdots≥s[n]$ , we have the sum of the $k$-largest elements given as:
+st.info('''> For an input vector $\mathbf s = [s_1, s_2, \cdots,s_n] ^{\\top}$ that is sorted as $s[1] ≥ s[2] ≥\cdots≥s[n]$ , we have the sum of the $k$-largest elements given as:
 > 
->$$\\begin{aligned}\quad\quad\quad\quad\quad\quad\sum_{i=1}^{k} \mathbf s_{[i]}=\min _{\lambda \in\\left\{s_{1}, s_{2}, \ldots, s_{n}\\right\}} \lambda k+\sum_{i=1}^{n} \max \\left(\mathbf s_{i}-\lambda, 0\\right)\\end{aligned}$$''')
+>$$\\begin{aligned}\quad\quad\quad\quad\quad\quad\sum_{i=1}^{k} s_{[i]}=\min _{\lambda \in\\left\{s_{1}, s_{2}, \ldots, s_{n}\\right\}} \lambda k+\sum_{i=1}^{n} \max \\left(s_{i}-\lambda, 0\\right)\\end{aligned}$$''',icon='ℹ️')
 
 
 st.markdown('​这个引理的证明很简单：')
-st.latex(r'''\begin{aligned} \sum_{i=1}^{k} \mathbf s_{[i]}&=\sum_{i=1}^{k} \mathbf s_{[i]}-\lambda+\lambda k \\&\leq\lambda k+\sum_{i=1}^{k} \mathbf \max(s_{[i]}-\lambda,0)\\&\leq \lambda k+\sum_{i=1}^{n} \mathbf \max(s_i-\lambda,0)\end{aligned}\tag{3-x}''')
+st.latex(r'''\begin{aligned} \sum_{i=1}^{k}  s_{[i]}&=\sum_{i=1}^{k} s_{[i]}-\lambda+\lambda k \\&\leq\lambda k+\sum_{i=1}^{k} \mathbf \max(s_{[i]}-\lambda,0)\\&\leq \lambda k+\sum_{i=1}^{n} \mathbf \max(s_i-\lambda,0)\end{aligned}\tag{3-x}''')
 
 st.markdown('​当$\lambda$比$ s_{[k]}$小时，$\max$算子是生效的，当$\lambda$等于$s_{[k]}$时，$\max$算子不生效，有：')
-st.latex(r'''\begin{aligned} \lambda k+\sum_{i=1}^{n} \mathbf \max(s_{i}-\lambda,0)&=\lambda k +\sum_{i=1}^{n} \mathbf s_{i}-\lambda\\&=k\mathbf s_{[k]}+\sum_{i=1}^{k} \mathbf s_{[i]}-s_{[k]}\\&=\sum_{i=1}^{k} \mathbf s_{[i]}\end{aligned} \tag{3-x}''')
-st.markdown('​更具体地，等式$(3-x)$成立的条件是$\mathbf s_{[k]}\leq \lambda \leq \mathbf s_{[k+1]}$。通过控制$\lambda$的大小，我们可以得到$\mathbf s$的前$k$个最大值之和。而第$k$大的值$\mathbf s_{[k]}$表明上可以通过下式得到：')
-st.latex(r'''\begin{aligned}\mathbf s_{[i]}&=\sum_{i=1}^{k} \mathbf s_{[i]}-\sum_{i=1}^{k-1} \mathbf s_{[i]}\\&=\min _{\lambda \in\left\{s_{1}, s_{2}, \ldots, s_{n}\right\}} \lambda k+\sum_{i=1}^{n} \max \left(\mathbf s_{i}-\lambda, 0\right)\\&-\big(\min _{\lambda'\in\left\{s_{1}, s_{2}, \ldots, s_{n}\right\}} \lambda'(k-1)+\sum_{i=1}^{n} \max \left(\mathbf s_{i}-\lambda' 0\right) \big)\\&=\min_{\lambda}F_{k}(\lambda)-\min_{\lambda'}F_{k-1}(\lambda')\end{aligned}''')
-st.markdown('​我们会发现这是一个差分$\min$运算，会让优化问题变得复杂，不便于接下来的推导。为此，我们必须想一种方式让优化目标只有一个$\min$。等式$\sum_{i=1}^{k} \mathbf s_{[i]}=\lambda k+\sum_{i=1}^{n} \mathbf \max(s_{i}-\lambda,0)$的成立条件是$\mathbf s_{[k]}\leq \lambda \leq \mathbf s_{[k+1]}$，我们思考是否可以再构造一个优化目标使得$\mathbf s_{[k-1]}\leq \lambda \leq \mathbf s_{[k]}，$这样就可以通过夹逼的方式强迫$\lambda=\mathbf s_{[k]}$，优化$\lambda$使得目标最小就得到了最终的$\mathbf s_{[k]}$。换个角度想，前$k$大其实等价于后$n-k+1$小，如果将$\mathbf s$取负即令$\mathbf t=-\mathbf s$，则$\mathbf t$的前$n-k+1$大等价于$\mathbf s$的后$n-k+1$小等价于$\mathbf s$的前$k$​大。如下是一个直观的例子：')
+st.latex(r'''\begin{aligned} \lambda k+\sum_{i=1}^{n} \mathbf \max(s_{i}-\lambda,0)&=\lambda k +\sum_{i=1}^{n}  s_{i}-\lambda\\&=k\mathbf s_{[k]}+\sum_{i=1}^{k}s_{[i]}-s_{[k]}\\&=\sum_{i=1}^{k}  s_{[i]}\end{aligned} \tag{3-x}''')
+st.markdown('​更具体地，等式$(3-x)$成立的条件是$ s_{[k]}\leq \lambda \leq  s_{[k+1]}$。通过控制$\lambda$的大小，我们可以得到$\mathbf s$的前$k$个最大值之和。而第$k$大的值$ s_{[k]}$表明上可以通过下式得到：')
+st.latex(r'''\begin{aligned}s_{[i]}&=\sum_{i=1}^{k}  s_{[i]}-\sum_{i=1}^{k-1} s_{[i]}\\&=\min _{\lambda \in\left\{s_{1}, s_{2}, \ldots, s_{n}\right\}} \lambda k+\sum_{i=1}^{n} \max \left(s_{i}-\lambda, 0\right)\\&-\big(\min _{\lambda'\in\left\{s_{1}, s_{2}, \ldots, s_{n}\right\}} \lambda'(k-1)+\sum_{i=1}^{n} \max \left(s_{i}-\lambda' 0\right) \big)\\&=\min_{\lambda}F_{k}(\lambda)-\min_{\lambda'}F_{k-1}(\lambda')\end{aligned}''')
+st.markdown('​我们会发现这是一个差分$\min$运算，会让优化问题变得复杂，不便于接下来的推导。为此，我们必须想一种方式让优化目标只有一个$\min$。等式$\sum_{i=1}^{k} \mathbf s_{[i]}=\lambda k+\sum_{i=1}^{n} \max(s_{i}-\lambda,0)$的成立条件是$ s_{[k]}\leq \lambda \leq s_{[k+1]}$，我们思考是否可以再构造一个优化目标使得$ s_{[k-1]}\leq \lambda \leq  s_{[k]}，$这样就可以通过夹逼的方式强迫$\lambda= s_{[k]}$，优化$\lambda$使得目标最小就得到了最终的$ s_{[k]}$。换个角度想，前$k$大其实等价于后$n-k+1$小，如果将$\mathbf s$取负即令$\mathbf t=-\mathbf s$，则$\mathbf t$的前$n-k+1$大等价于$\mathbf s$的后$n-k+1$小等价于$\mathbf s$的前$k$​大。如下是一个直观的例子：')
 st.image('assets/learning2rank/reverse-index.png')
 st.markdown('​因此可以同样使用引理2把$\mathbf t$的前$n-k+1$大的和写成：')
-st.latex(r'''\begin{aligned} \sum_{i=1}^{n-k+1}\mathbf t_{[i]}&=\min_{\lambda\in\mathbf t=-\mathbf s}\big[ \lambda(n-k+1)+\sum_{i=1}^{n}\max(\mathbf t_i-\lambda,0)\big]\\&st.\mathbf t_{[n-k+1]}\leq \lambda \leq \mathbf t_{[n-k+2]}\end{aligned}''')
+st.latex(r'''\begin{aligned} \sum_{i=1}^{n-k+1} t_{[i]}&=\min_{\lambda\in\mathbf t=-\mathbf s}\big[ \lambda(n-k+1)+\sum_{i=1}^{n}\max(t_i-\lambda,0)\big]\\&st.t_{[n-k+1]}\leq \lambda \leq t_{[n-k+2]}\end{aligned}''')
 st.markdown('​再令$\lambda=-\lambda$​，则有：')
-st.latex(r'''\begin{aligned} \sum_{i=1}^{n-k+1}\mathbf t_{[i]}&=\min_{\lambda\in\mathbf -t=\mathbf s}\big[ -\lambda(n-k+1)+\sum_{i=1}^{n}\max(\mathbf \lambda-s_i,0)\big]\\&st.\mathbf t_{[n-k+1]}\leq -\lambda \leq \mathbf t_{[n-k+2]}\equiv \mathbf s_{[k]}\geq\lambda \geq \mathbf s_{[k-1]}\end{aligned}''')
+st.latex(r'''\begin{aligned} \sum_{i=1}^{n-k+1} t_{[i]}&=\min_{\lambda\in\mathbf -t=\mathbf s}\big[ -\lambda(n-k+1)+\sum_{i=1}^{n}\max(\mathbf \lambda-s_i,0)\big]\\&st. t_{[n-k+1]}\leq -\lambda \leq t_{[n-k+2]}\equiv  s_{[k]}\geq\lambda \geq  s_{[k-1]}\end{aligned}''')
 st.markdown('​但本质上我们是想求得$\lambda$，因此我们合并两个$\\arg\min_{\lambda}$使得$ \mathbf s_{[k]}\geq\lambda \geq \mathbf s_{[k-1]}$与$\mathbf s_{[k]}\leq \lambda \leq \mathbf s_{[k+1]}$同时成立，即$\lambda^*=\mathbf s_{[k]}$，最终合并两式和，有关于$\lambda$的优化目标为：')
-st.latex(r'''\begin{aligned} \lambda^*=\mathbf s_{[k]}&=\arg \min _{\lambda \in \mathbf{s}}\left(\lambda k+\sum_{i=1}^{n} \max \left(\mathbf s_{i}-\lambda, 0\right)+\lambda(k-1-n)+\sum_{i=1}^{n} \max \left(\lambda-\mathbf s_{i}, 0\right)\right) \\&=\arg \min _{\lambda\in\mathbf s}\lambda(2k-1-n)+\sum_{i=1}^{n}\max(\mathbf s_i-\lambda,0)+\max(\mathbf \lambda-\mathbf s_i,0)\\&=\arg \min _{\lambda\in\mathbf s}\lambda(2k-1-n)+\sum_{i=1}^{n}|\mathbf s_i-\lambda|\\&=\arg \max _{\lambda\in\mathbf s}\lambda(n+1-2k)-\sum_{i=1}^{n}|\mathbf s_i-\lambda|\end{aligned}''')
+st.latex(r'''\begin{aligned} \lambda^*=s_{[k]}&=\arg \min _{\lambda \in \mathbf{s}}\left(\lambda k+\sum_{i=1}^{n} \max \left(s_{i}-\lambda, 0\right)+\lambda(k-1-n)+\sum_{i=1}^{n} \max \left(\lambda- s_{i}, 0\right)\right) \\&=\arg \min _{\lambda\in\mathbf s}\lambda(2k-1-n)+\sum_{i=1}^{n}\max(s_i-\lambda,0)+\max(\mathbf \lambda-\mathbf s_i,0)\\&=\arg \min _{\lambda\in\mathbf s}\lambda(2k-1-n)+\sum_{i=1}^{n}|s_i-\lambda|\\&=\arg \max _{\lambda\in\mathbf s}\lambda(n+1-2k)-\sum_{i=1}^{n}|s_i-\lambda|\end{aligned}''')
 st.markdown('​我们看这个等式，并把它展开：')
-st.latex(r'''\begin{aligned} \lambda^*&=\arg \max _{\lambda\in\mathbf s}\lambda(n+1-2k)-\sum_{i=1}^{n}| s_i-\lambda|\\&=\arg \max _{\lambda\in\mathbf s}\begin{pmatrix}s_1(n+1-2k)-\sum_{i=1}^{n}|s_i-\mathbf s_1| \\s_2(n+1-2k)-\sum_{i=1}^{n}| s_i-\mathbf s_2|\\\vdots \\s_n(n+1-2k)-\sum_{i=1}^{n}| s_i-\mathbf s_n|\end{pmatrix}\\&=\arg \max _{\lambda\in\mathbf s}[(n+1-2k)\mathbf s-\mathbf A_i\mathbb 1]\end{aligned}''')
+st.latex(r'''\begin{aligned} \lambda^*&=\arg \max _{\lambda\in\mathbf s}\lambda(n+1-2k)-\sum_{i=1}^{n}| s_i-\lambda|\\&=\arg \max _{\lambda\in\mathbf s}\begin{pmatrix}s_1(n+1-2k)-\sum_{i=1}^{n}|s_i-s_1| \\s_2(n+1-2k)-\sum_{i=1}^{n}| s_i- s_2|\\\vdots \\s_n(n+1-2k)-\sum_{i=1}^{n}| s_i-s_n|\end{pmatrix}\\&=\arg \max _{\lambda\in\mathbf s}[(n+1-2k)\mathbf s-\mathbf A_{\mathbf s}\mathbb 1]\end{aligned}''')
 st.markdown('​该式子的含义是遍历$\lambda \in \mathbf s$使得$\lambda(n+1-2k)-\sum_{i=1}^{n}|\mathbf s_i-\lambda|$达到最大，如果抛去$\\begin{aligned}\\arg\max_{\lambda}\\end{aligned}$的下角标$\lambda$，则：')
-st.latex(r'''\begin{aligned} &\arg \max \begin{pmatrix}s_1(n+1-2k)-\sum_{i=1}^{n}| s_i-\mathbf s_1| \\s_2(n+1-2k)-\sum_{i=1}^{n}| s_i-\mathbf s_2|\\\vdots \\s_n(n+1-2k)-\sum_{i=1}^{n}| s_i-\mathbf s_n|\end{pmatrix}\\&=\arg \max [(n+1-2k)\mathbf s-\mathbf A_i\mathbb 1]\end{aligned}''')
+st.latex(r'''\begin{aligned} &\arg \max \begin{pmatrix}s_1(n+1-2k)-\sum_{i=1}^{n}| s_i- s_1| \\s_2(n+1-2k)-\sum_{i=1}^{n}| s_i-s_2|\\\vdots \\s_n(n+1-2k)-\sum_{i=1}^{n}| s_i- s_n|\end{pmatrix}\\&=\arg \max [(n+1-2k)\mathbf s-\mathbf A_{\mathbf s}\mathbb 1]\end{aligned}''')
 st.markdown('​作用是找到该向量中分量值最大元素对应的索引。若结果是索引$i$，则说明$s_i=s_{[k]}$，即排序后第$k$大的元素来自于原始索引$i$，理清了这层关系，我们开始构造置换矩阵$P$。我们按照行进构造，即先找排序后第$1$大的元素对应与原始索引是多少，再以此类。选定第$1$行，从左往右，那么我们就判断$\mathbf s_1=\mathbf s_{[k]}$时的$k$是多少，则$P[1,k]=1$，第$k$行之外的其他行$P[i,1]=0,i\\neq k$。那$s_i$第几大我们要一一判断，从$k=1,2,...,n$，对于第$1$​列而言，只要：')
 st.latex(r'''\begin{aligned} \arg \max \begin{pmatrix}s_1(n+1-2k)-\sum_{i=1}^{n}| s_i-s_1| \\s_2(n+1-2k)-\sum_{i=1}^{n}| s_i- s_2|\\\vdots \\s_n(n+1-2k)-\sum_{i=1}^{n}| s_i- s_n|\end{pmatrix}=1，\text{for k in }1,2,...,n\end{aligned}''')
 st.markdown('​便能说明$\mathbf s_1=\mathbf s_{[k]}$，因此，对于第$1$行我们可以写成：')
@@ -238,10 +251,9 @@ st.latex(r'''\begin{aligned}P[i,j]==\left\{\begin{array}{ll}1 & \text { if } j=\
 st.markdown('​当然，$\\arg\max$算子是不可导的，$P$也是不可导的，$P$的每一行是一个$\operatorname{one-hot}$向量，我们找一个可导近似来近似这个$\operatorname{one-hot}$向量，最简单的，可以用算子$\operatorname{softmax with temperature}$近似，即：')
 st.latex(r'''\lim _{\tau \rightarrow 0^{+}} \widehat{P}_{\operatorname{sort}(\mathbf{s})}[i,:](\tau)=P_{\operatorname{sort}(\mathbf{s})}[i,:] \quad \forall i \in\{1,2, \ldots, n\}''')
 st.markdown('​温度系数$\tau$越小则该分布越接$\operatorname{one-hot}$向量，$\tau$越大则越接近平稳分布。接下来我们再思考如何构造优化目标，在很多排序任务中，**目标排序是唯一的**，比如给定一个数字列表$[3,2, 1, 4]$，我们知道升序结果是 $[1, 2,3, 4]$。但在**模型学习排序函数**时，并不是直接输出这个固定结果，而是输出一个分数向量，然后间接地产生排序。一个分数向量可能对应多个潜在的排列结果，如果只用一个排列，那么信号太稀疏了，不够全面，网络在学习时可能会记住某个输入对应的一种排列情况而不是学到通用规律。而列举分数向量$\mathbf s$​所有排列情况显然也不现实，因此我们需要采样，即从所有可能性结果中选出一部分具有代表性的排列，然后评估这些排序的表现，用这些反馈去优化分数向量生成器，从而提高神经网络的泛化能力。')
-st.markdown('''> :blue[[!NOTE]]
->
+st.info('''
 > 不采样就对应了确定性Neural Sort，采样并重参数化就对应了随机Neural Sort。
-''')
+''',icon='ℹ️')
 st.markdown('​直接采样排列$z\sim \operatorname{Plackett-Luce}(\mathbf s)$这个操作也是不可导的，最常见的解决方式之一是重参数化，将离散采样过程转化为**确定性函数+噪声扰动**，使梯度能通过连续变量传递而$\operatorname{Gumbel Softmax}$就是代表性的重参数化方法。重参数化方法是处理如下优化目标的一种方法：')
 st.latex(r'''\begin{aligned} L_{\theta}=\mathbb E_{z\sim P_{\theta}(z)}\big[ f(z)\big]\end{aligned}''')
 st.markdown('​由于采样操作不可导，因此没有办法写一个精确的$L_{\\theta}$，而$z$从$p_{\\theta}(z)$中采样会失去关于参数$\\theta$​的梯度信息，重参数方法则将采样变化成“固定随机数 + 可导变换”的方式使得反向传播可以用于训练目标涉及到采样操作的神经网络。其具体数学形式如下：设一个随机变量 $z∼p(z∣θ)z$，其中 $\\theta$ 是模型参数，例如均值 $\mu$、标准差 $\sigma$等，目标关于参数的梯度为：')
@@ -360,8 +372,9 @@ st.latex(r'''\begin{aligned}\Delta_{i, j}=\left|G_{i}-G_{j}\right| \cdot\left|\f
 st.markdown('​$G_i$是文档的增益，$D(\pi(i))=\log(1+\pi(i))$是折扣因子，$\pi(i)$是按照分数$\mathbf s$排序后文档$y_i$的位置。至此，不难发现$\\text{DPO}$可以无缝融入各种各样的排序损失 ，上文第三章中提到的$\mathrm{NeuralNDCG}$同样也可以用于$\\text{DPO}$，zhao等人提出的$\mathrm{OPO}$[[17]](https://arxiv.org/pdf/2410.04346)便是基于这个思想，借用公式(3-x)，$\mathrm{OPO}$的优化目标可以写成：')
 st.latex(r'''\begin{aligned} \begin{aligned} \operatorname{NeuralNDCG}@k(\tau)(\mathbf {s,r})=\mathbb E_{x,\mathbf y,\mathbf r\sim \mathcal D}\bigg[\frac{\sum_{i=1}^{k}\big(S g(\mathbf r)\big)_id(i)}{\operatorname{IDCG@}k}\bigg]\end{aligned}\end{aligned}''')
 st.markdown('​$\mathrm{OPO}$列举了不同反馈标注形式下的工作、类型及优化目标，如下图：')
-st.image('assets/image-20250709143803491.png')
+st.image('assets/learning2rank/dpo-list.png')
 st.markdown('​此外，$\mathrm{OPO}$基于$\\text{UltraFeedback}$和$\\text{SimPO}$构建了一个有序奖励的数据集，并通过实验结果表明使用多样化的负样本比仅使用最低质量的回答作为负样本更能够提升模型性能。')
+st.warning("未完待续......")
 st.markdown('# 5.参考文献')
 st.markdown('''
 [[1]Burges,Shaked,Renshaw.Learning to Rank using Gradient Descent[C]//Proceedings of the 22 nd International Conference on Machine Learning, Bonn, Germany, 2005.](https://icml.cc/Conferences/2015/wp-content/uploads/2015/06/icml_ranking.pdf)
